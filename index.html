@@ -81,6 +81,18 @@
     color: var(--text);
     font-family: 'Roboto', sans-serif;
     min-height: 100vh;
+  }
+
+  /* TT-212-vervolg (06-09-2026): overflow-x:hidden stond eerst op body zelf.
+     Dat dwingt Android Chrome tot main-thread scrollen in plaats van de
+     snelle, geanimeerde compositor-route — een bekende, gedocumenteerde
+     oorzaak van schokkerig scrollen, overal op de pagina, ongeacht wat er
+     verder op het scherm staat. De vorige fix (will-change op body::before)
+     loste dat niet op: die laag was niet de oorzaak. #appRoot draagt nu de
+     overflow-x:hidden i.p.v. body — de clip-functie blijft hetzelfde
+     (niets scrollt nog horizontaal), maar body/html zelf blijven vrij, dus
+     de browser mag weer de snelle route gebruiken. */
+  #appRoot {
     overflow-x: hidden;
   }
 
@@ -92,7 +104,10 @@
      zodat er minder onnodig gescrold hoeft te worden. Op mobiel blijft
      het gedrag ongewijzigd (natuurlijk scrollen, geen geforceerde hoogte). */
   @media (min-width: 768px) {
-    body { display: flex; flex-direction: column; min-height: 100vh; }
+    /* TT-212-vervolg: #appRoot draagt deze flex-layout nu, niet meer body
+       zelf — zie de toelichting bij #appRoot hierboven. .app-topbar en
+       .app-view zijn kinderen van #appRoot, niet meer van body. */
+    #appRoot { display: flex; flex-direction: column; min-height: 100vh; }
     .app-topbar { flex-shrink: 0; }
     .app-view.active { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   }
@@ -555,6 +570,12 @@
   }
   .wizard-btn:hover { filter: brightness(1.08); }
   .wizard-btn-accent { background: var(--accent); color: #4a4a4a; }
+  /* TT-209 (06-09-2026, gemeld door Ronald): alle vijf Terug-knoppen in de
+     wizard gebruikten wizard-btn-accent — zelfde goud als Verder/Profiel
+     aanmaken, terwijl elke andere Terug-knop in de app (13x) .btn-ghost is.
+     Secundaire variant, zelfde .wizard-btn-layout (flex:1, compacte tekst). */
+  .wizard-btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .wizard-btn-ghost:hover { color: var(--text); border-color: #555; }
 
   /* Ruimte houden voor de vaste balk hierboven, zodat het laatste veld van
      elke stap er nooit achter verdwijnt. Bewust als losse padding-bottom
@@ -744,7 +765,7 @@
     display: flex;
     align-items: center;
     gap: 24px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .avatar-preview-wrap {
@@ -967,7 +988,7 @@
     padding: 12px 16px;
     font-size: 13px;
     color: #c8a800;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     display: flex;
     gap: 10px;
     align-items: flex-start;
@@ -1380,12 +1401,16 @@
     border-radius: 8px;
     border: 1px solid transparent;
     background: transparent;
-    color: var(--muted);
+    /* TT-217 (06-09-2026): standaard al accentkleur, niet pas bij :hover —
+       zelfde reden als .niveau-info-btn/.modal-close: geen hover op een
+       telefoon, dus de stippen vielen altijd weg tegen de achtergrond. Geldt
+       voor alle vier de gebruiksplekken (hamburger, zoekvoorkeuren-meer,
+       profiel-meer, band-meer) — één klasse, één keer gerepareerd. */
+    color: var(--accent);
     cursor: pointer;
     transition: all 0.2s;
   }
   .nav-menu-btn:hover, .nav-menu-btn.active {
-    color: var(--accent);
     border-color: var(--border);
     background: var(--surface);
   }
@@ -1819,15 +1844,6 @@
   }
   .result-card-msg-btn svg { color: #000; }
 
-  /* TT-U13 (12-08-2026): één regel bio op de kaart. */
-  .result-card-bio {
-    font-size: 12px;
-    color: var(--muted);
-    font-style: italic;
-    margin-top: 4px;
-    line-height: 1.4;
-  }
-
   /* TT-30: envelop-icoon op rijen zit nu in een klein afgerond knopvlak
      i.p.v. los aan het eind van de rij te zweven. */
   .result-row-msg-btn {
@@ -1992,14 +2008,18 @@
     position: absolute;
     top: 16px; right: 16px;
     background: var(--surface2);
-    border: 1px solid var(--border);
+    /* TT-217 (06-09-2026): border en kruis standaard al accentkleur, niet pas
+       bij :hover — zelfde reden als .niveau-info-btn (§6 huisstijl): op een
+       telefoon bestaat geen hover, dus viel de knop altijd weg tegen de
+       donkere achtergrond. */
+    border: 1px solid var(--accent);
     border-radius: 50%;
     /* TT-U23 (12-08-2026): was 32x32 pixels. */
     width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     font-size: 18px;
-    color: var(--muted);
+    color: var(--accent);
     transition: all 0.15s;
   }
 
@@ -2012,13 +2032,15 @@
     position: absolute;
     top: 16px; left: 16px;
     background: var(--surface2);
-    border: 1px solid var(--border);
+    /* TT-217 (06-09-2026): zelfde accent-fix als .modal-close, om spiegelbeeld
+       te blijven — zie toelichting daar. */
+    border: 1px solid var(--accent);
     border-radius: 50%;
     width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     font-size: 18px;
-    color: var(--muted);
+    color: var(--accent);
     transition: all 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
@@ -2522,8 +2544,8 @@
      regel bij .drop-zone hierboven. */
   @media (hover: hover) {
     .tag:hover { border-color: var(--accent); color: var(--accent); }
-    .modal-close:hover { color: var(--text); border-color: #555; }
-    .modal-back:hover { color: var(--text); border-color: #555; }
+    .modal-close:hover { background: rgba(245,197,24,0.15); }
+    .modal-back:hover { background: rgba(245,197,24,0.15); }
     .level-choice:hover { border-color: var(--accent); }
     .niveau-info-btn:hover { background: rgba(245,197,24,0.15); }
     .picker-field:hover { border-color: var(--accent); }
@@ -2541,6 +2563,8 @@
 </style>
 </head>
 <body>
+
+<div id="appRoot">
 
 <div class="app-topbar">
 <header>
@@ -2794,7 +2818,7 @@
          er is geen vorige stap. -->
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStepFromStart()">Terug</button>
+        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStepFromStart()">Terug</button>
         <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(0)">Verder</button>
       </div>
     </div>
@@ -2851,7 +2875,7 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(1)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(1)">Terug</button>
         <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(1)">Verder</button>
       </div>
     </div>
@@ -2860,7 +2884,7 @@
   <!-- STEP 3: Wat zoek je -->
   <div class="panel" id="step2">
     <div class="hero-band"></div>
-    <div class="panel-title">Wat wil je nu? <span id="magOokLaterWatZoekJe" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-title">Wat wil je nu?</div>
     <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
     <div class="goal-options" id="goalOptions">
@@ -2909,7 +2933,7 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(2)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(2)">Terug</button>
         <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(2)">Verder</button>
       </div>
     </div>
@@ -2918,7 +2942,7 @@
   <!-- STEP 4: Je setlist -->
   <div class="panel" id="step3">
     <div class="hero-band"></div>
-    <div class="panel-title">Je setlist <span id="magOokLaterRepertoire" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-title">Je setlist</div>
     <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer. Je kunt dit ook later op je profiel aanvullen.</div>
 
     <!-- Zoekblok: nummer toevoegen -->
@@ -2971,7 +2995,7 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(3)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(3)">Terug</button>
         <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(3)">Verder</button>
       </div>
     </div>
@@ -2980,9 +3004,9 @@
   <!-- STEP 5: Media -->
   <div class="panel" id="step4">
     <div class="hero-band"></div>
-    <div class="panel-title">Je mediahoek <span id="magOokLaterMedia" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-title">Je mediahoek</div>
 
-    <div class="field" style="margin-bottom:28px;">
+    <div class="field">
       <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
@@ -3000,12 +3024,12 @@
       <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
-
     <div class="media-tip">
       <span id="wizardMhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
+
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
     <div class="media-tabs">
       <button class="media-tab active" onclick="switchMediaTab('upload', this)">Upload</button>
@@ -3040,8 +3064,8 @@
          voortgang. Nu: gewone knoppen die een modal openen (openLegalModal()),
          geen navigatie, geen href, dus geen risico meer op het verlaten van
          de wizard. -->
-    <label style="display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;">
-      <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:4px;flex-shrink:0;">
+    <label style="display:flex;align-items:flex-start;gap:8px;margin-top:20px;font-size:12px;color:var(--muted);cursor:pointer;">
+      <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:-3px;flex-shrink:0;">
       <span>
         Ik ga akkoord met de
         <button type="button" onclick="event.preventDefault();openLegalModal('terms')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Gebruiksvoorwaarden</button>,
@@ -3052,7 +3076,7 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(4)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(4)">Terug</button>
         <button class="btn wizard-btn wizard-btn-accent" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
       </div>
     </div>
@@ -3305,7 +3329,7 @@
     <div class="hero-band"></div>
     <div class="panel-title" style="margin-bottom:20px;">Je mediahoek</div>
 
-    <div class="field" style="margin-bottom:28px;">
+    <div class="field">
       <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
@@ -3323,12 +3347,12 @@
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
-
     <div class="media-tip">
       <span id="mhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
+
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
 
     <div class="media-tabs">
       <button type="button" class="media-tab active" onclick="switchMhMediaTab('upload', this)">Upload</button>
@@ -3746,6 +3770,10 @@
   <div class="my-profile-wrap">
     <!-- TT-41: openstaande banduitnodigingen, alleen zichtbaar als er zijn -->
     <div id="bandInvitesBanner"></div>
+    <!-- TT-210 (06-09-2026): vervangt het automatische wegsturen naar de
+         wizard (Route B, TT-09) — zie resumeOnboarding()/renderOnboardingResumeBanner()
+         hieronder. Alleen zichtbaar als er onafgeronde voortgang klaarstaat. -->
+    <div id="onboardingResumeBanner"></div>
     <!-- V-16 (13-08-2026): een oprichter die stopt vraagt eerst de overige
          leden of iemand het overneemt — dat aanbod verschijnt hier. -->
     <div id="founderOfferBanner"></div>
@@ -4384,8 +4412,8 @@
 
     <div class="modal-sticky-footer" id="instrumentLevelFooter" style="display:none;">
       <div style="display:flex;gap:12px;">
-        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;color:var(--danger);" onclick="removeInstrumentFromSheet()">Instrument verwijderen</button>
-        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;" onclick="openMusicianNiveauInfoModal()">Volledige toelichting op dit niveau</button>
+        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;" onclick="removeInstrumentFromSheet()">Terug</button>
+        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;" onclick="openMusicianNiveauInfoModal()">Uitgebreide toelichting niveaus</button>
       </div>
     </div>
   </div>
@@ -4441,6 +4469,8 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
+
+</div><!-- /#appRoot -->
 
 <script>
 // ─── Supabase ────────────────────────────────────────────────────────────────
@@ -4626,10 +4656,10 @@ async function onUserLoggedIn(user) {
   // blijft 'm daarna gewoon opnieuw zetten, dat is onschadelijk.
   hasOwnProfile = !!(await getMyMusicianId());
 
-  // Route B (TT-09): als er een onafgeronde onboarding lag te wachten (bijv. na
-  // een refresh), gaan we daar direct naar terug i.p.v. naar Mijn Profiel —
-  // anders verliest iemand het overzicht van waar hij was gebleven.
-  if (tryResumeOnboarding()) return;
+  // TT-210 (06-09-2026): Route B (automatisch naar de wizard bij onafgeronde
+  // onboarding) is vervangen door een bewuste knop op Mijn Profiel — zie
+  // renderOnboardingResumeBanner()/resumeOnboarding(). Een refresh stuurt
+  // niemand meer ongevraagd weg van de pagina die hij probeerde te bereiken.
 
   // TT-32 (07-08-2026): kwam dit inloggen vanuit een klik op het chat-icoon
   // (bestaand account, dus meteen een profiel beschikbaar)? Dan direct naar
@@ -5099,7 +5129,7 @@ function showView(view, mode) {
     if (currentUser && myMusicianId && !editingMusicianId) { showView('myprofile', 'redirect'); return; }
     // TT-168-overgang (02-09-2026): "locked" betekent sinds de overgang naar
     // het tegeloverzicht nog maar één ding — een onboarding die al voorbij
-    // stap 1 is (account bestaat al, tryResumeOnboarding()). Bewerken van
+    // stap 1 is (account bestaat al, resumeOnboarding()). Bewerken van
     // een al afgerond profiel loopt niet meer via de wizard, dus die
     // vertakking (en de save-step-btn-knoppen die daarbij hoorden) is
     // vervallen.
@@ -5141,8 +5171,16 @@ function showView(view, mode) {
     // stap 1. Is het account al aangemaakt (bijv. na een refresh mid-
     // onboarding), dan is die toestemming al gegeven bij de eerste keer —
     // opnieuw aanvinken levert dan alleen wrijving op zonder meerwaarde.
+    // Bugfix 06-09-2026 (gevonden tijdens het uitzoeken van de vinkje-
+    // uitlijning, niet door Ronald gemeld): style.display = '' wist de
+    // display-eigenschap uit de inline stijl in plaats van 'm terug te zetten
+    // naar wat er al stond. Voor deze rij betekende dat: bij elke gewone,
+    // niet-hervatte registratie (verreweg het vaakste pad) verloor de rij
+    // zijn "display:flex" voorgoed zodra showView('register') één keer
+    // draaide — de rij viel terug op het label-standaard "inline", zonder
+    // gap en zonder align-items. Expliciet 'flex' teruggeven i.p.v. leeg.
     const consentRow = document.getElementById('consentCheckbox')?.closest('label');
-    if (consentRow) consentRow.style.display = locked ? 'none' : '';
+    if (consentRow) consentRow.style.display = locked ? 'none' : 'flex';
     if (locked) {
       document.getElementById('submitProfileBtn').disabled = false;
       document.getElementById('submitProfileBtn').style.opacity = '';
@@ -5896,10 +5934,6 @@ function musicianCardHTML(m) {
   const displayName = displayNameOf(m);
   const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
-  // TT-U13 (12-08-2026): één regel uit de bio. Vóór deze wijziging was er
-  // geen enkel woord van de persoon zelf zichtbaar vóór de klik.
-  const bioRuw = (m.bio || '').replace(/\s+/g, ' ').trim();
-  const bioSnippet = bioRuw.length > 60 ? bioRuw.slice(0, 60).trimEnd() + '…' : bioRuw;
 
   return `
     <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
@@ -5909,7 +5943,6 @@ function musicianCardHTML(m) {
         <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-      ${bioSnippet ? `<div class="result-card-bio">${escHtml(bioSnippet)}</div>` : ''}
       <div class="result-card-badges-line">${overflowBadgeHTML(instruments, col, 2)}</div>
       <div class="result-card-badges-line">${overflowBadgeHTML(genres, '#6ec8d8', 2)}</div>
     </div>`;
@@ -5932,8 +5965,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // regelt displayNameOf() op basis van wat de database heeft meegegeven.
   const displayName = isOwn ? m.fname : displayNameOf(m);
   const avatarSrc = safeUrl(m.avatar_url);
+  // TT-217 (06-09-2026): klik op de profielfoto vergroot 'm, zelfde bestaande
+  // lightbox als bij de foto's onder "Foto's" (openMediaLightbox()) — geen
+  // nieuwe component, hergebruik van het bestaande patroon.
   const avatarHTML = avatarSrc
-    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};margin-bottom:0;flex-shrink:0;">`
+    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};margin-bottom:0;flex-shrink:0;cursor:pointer;" onclick="openMediaLightbox('${jsAttr(avatarSrc)}')">`
     : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`;
 
   const songRows = [...m.musician_songs].sort((a, b) =>
@@ -6056,11 +6092,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
               ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escAttr(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">`
               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);">${escHtml(label)}</span></div>`;
             const tileStyle = 'display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;';
-            // TT-158 (27-08-2026): social-media-links alleen klikbaar voor een
-            // ingelogde gebruiker — zelfde regel als voorheen, nu op de tegel.
-            return currentUser
-              ? `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" style="${tileStyle}">${inner}</a>`
-              : `<span style="${tileStyle}cursor:default;">${inner}</span>`;
+            // TT-158 (27-08-2026) trok hier een grens bij "ingelogd": alleen
+            // dan klikbaar. TT-218 (06-09-2026), op verzoek van Ronald: die
+            // grens losgelaten — een link opent nu onder alle omstandigheden,
+            // ook uitgelogd.
+            return `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" style="${tileStyle}">${inner}</a>`;
           }).join('')}
         </div>
       </div>` : ''}`;
@@ -6717,6 +6753,51 @@ function requestFinalDeleteConfirmation() {
   );
 }
 
+// Haalt de werkelijke foutboodschap uit een db.functions.invoke()-fout. De
+// standaardfout van supabase-js ("Edge Function returned a non-2xx status
+// code") zegt niets over de échte oorzaak — die staat in de JSON die de
+// functie zelf teruggaf, bereikbaar via fnErr.context (het Response-object).
+async function extractFnErrorDetail(fnErr) {
+  if (!fnErr) return '';
+  try {
+    if (fnErr.context && typeof fnErr.context.json === 'function') {
+      const body = await fnErr.context.clone().json();
+      if (body && body.error) return body.error;
+    }
+  } catch (e) { /* niet te lezen, val terug op de generieke boodschap */ }
+  return fnErr.message || String(fnErr);
+}
+
+// TT-22-restpunt (06-09-2026): probeert het auth-account van de ingelogde
+// gebruiker te verwijderen via de Edge Function 'delete-own-account', met
+// twee herkansingen (drie pogingen totaal, 1s/2s pauze ertussen) bij een
+// mislukking. Geen enkele hoeveelheid pogingen kan een echte storing of het
+// ontbreken van internet oplossen — dit vangt alleen het meest voorkomende
+// geval op: een kortstondige hapering die bij een volgende poging al weg is.
+// Geeft naast ok/niet-ok ook de laatste technische foutdetail terug, zodat
+// een blijvende mislukking niet blind hoeft te worden opgelost (06-09-2026,
+// na meerdere niet-reproduceerbare mislukkingen zonder zichtbare oorzaak).
+async function deleteOwnAuthAccountWithRetry(maxAttempts = 3) {
+  let lastDetail = '';
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      // Let op: deze naam moet exact overeenkomen met de werkelijke naam/URL
+      // van de functie bij Supabase (Settings-tab van de functie) — niet
+      // slechts de weergavenaam in de functieoverzichtslijst. Bij een eerdere
+      // versie van dit ticket bleek dat te verschillen ("hyper-handler" als
+      // echte naam, "delete-own-account" als lijstweergave); Ronald heeft de
+      // functie zelf hernoemd zodat beide nu gelijk zijn.
+      const { error: fnErr } = await db.functions.invoke('delete-own-account');
+      if (!fnErr) return { ok: true, detail: '' };
+      lastDetail = await extractFnErrorDetail(fnErr);
+    } catch (e) {
+      lastDetail = (e && e.message) ? e.message : String(e);
+    }
+    if (attempt < maxAttempts) await new Promise(r => setTimeout(r, 1000 * attempt));
+  }
+  return { ok: false, detail: lastDetail };
+}
+
 async function executeAccountDeletion() {
   const mid = await getMyMusicianId();
   if (!mid) return;
@@ -6758,16 +6839,53 @@ async function executeAccountDeletion() {
     // gesprekspartner ziet voortaan "Verwijderde gebruiker" i.p.v. een lege
     // naam (Ronald, 09-08-2026: niet ook de geschiedenis van de ander wissen).
     const userId = currentUser ? currentUser.id : null;
+    if (userId) await deleteAllStorageForUser(userId);
+
+    // 5. Auth-account (login/wachtwoord) zelf verwijderen — TT-22-restpunt,
+    // gesloten 06-09-2026. Dit kan niet vanaf de client (vereist de service-
+    // role-sleutel), dus roept de Edge Function 'delete-own-account' aan.
+    // Die functie controleert zelf, via de meegestuurde sessie, wélke
+    // gebruiker de aanroeper is — hier wordt geen id meegestuurd dat de
+    // functie zou moeten vertrouwen. Moet vóór signOut() gebeuren: de
+    // functie heeft de huidige, nog geldige sessie nodig.
+    //
+    // Ronald (06-09-2026): "zorg dat het in een keer lukt." Drie pogingen
+    // i.p.v. één, met een korte pauze ertussen — vangt een kortstondige
+    // netwerk-/serverhapering op, wat de meest voorkomende reden voor een
+    // eenmalige mislukking is. Dit is geen garantie (een echte storing bij
+    // Supabase of geen internetverbinding laat ook drie pogingen mislukken),
+    // maar wel de maximale betrouwbaarheid die vanaf de client haalbaar is.
+    const authResult = await deleteOwnAuthAccountWithRetry();
 
     pendingSoloBandIds = [];
     closeDeleteAccountModal();
     myMusicianId = null;
     myOwnCity = null;
-    if (userId) await deleteAllStorageForUser(userId);
-    await signOut();
-    // Het auth-account zelf (login/wachtwoord) blijft nog bestaan — dat kan
-    // niet vanaf de client, zie het TT-22-restpunt in actielijst.md.
-    showToast('Je account is verwijderd.');
+    // Voorkomt dat een volgende login op ditzelfde (mogelijk nog bestaande,
+    // zie stap 5 hierboven) auth-account een oude wizard-stand terugvindt —
+    // readSavedOnboarding() matcht alleen op userId, niet op of er nog een
+    // profiel bestaat. Zonder dit zou de "Verdergaan"-banner op Mijn Profiel
+    // (of, vóór TT-210, de automatische sprong) verwijzen naar de laatst
+    // bewaarde stap van het inmiddels verwijderde profiel (gevonden
+    // 06-09-2026, Ronald: "kom ik meteen op de laatste stap: media
+    // toevoegen").
+    clearOnboardingProgress();
+    try { await signOut(); } catch (e) { /* sessie kan al ongeldig zijn ná stap 5 hierboven */ }
+
+    if (authResult.ok) {
+      showToast('Je account is verwijderd.');
+    } else {
+      // Profiel is al onomkeerbaar weg (stap 1-4 zijn al uitgevoerd) — dit
+      // niet verbergen achter de gewone succesmelding, maar ook niet de hele
+      // afronding blokkeren voor iets dat al niet meer terug te draaien is.
+      // Vriendelijke, jargon-vrije tekst (Plezier-principe) — de tijdelijke
+      // alert()-versie met technische detail (06-09-2026) heeft zijn werk
+      // gedaan: de echte oorzaak (functienaam-mismatch bij Supabase) is
+      // gevonden en opgelost. Dit is weer de bedoelde eindtekst. De detail
+      // blijft wel in de console staan, voor het geval dit ooit terugkomt.
+      console.error('Auth-account niet verwijderd:', authResult.detail);
+      showToast('Je profiel is verwijderd. Je inloggegevens konden niet automatisch verwijderd worden — mail privacy@talenttent.org als je dit ook wilt laten verwijderen.');
+    }
     showView('landing');
   } catch (e) {
     // De modal is op dit punt al dicht (zie requestFinalDeleteConfirmation);
@@ -6834,7 +6952,7 @@ function clearOnboardingProgress() {
 }
 
 // Vult de wizard-velden op basis van de huidige `state` — gedeeld door
-// editMyProfile() (state komt uit de database) en tryResumeOnboarding()
+// editMyProfile() (state komt uit de database) en resumeOnboarding()
 // (state komt terug uit sessionStorage), zodat beide altijd hetzelfde doen.
 function populateWizardFieldsFromState() {
   document.getElementById('fname').value = state.fname;
@@ -6895,15 +7013,45 @@ function populateWizardFieldsFromState() {
   avatarPreview.style.borderColor = DEFAULT_PROFILE_COLOR;
 }
 
-// Wordt aangeroepen bij elke geslaagde login (appInit + auth-state-change).
-// Geeft true terug als er daadwerkelijk hervat is (onUserLoggedIn slaat dan
-// de gewone "naar Mijn Profiel"-route over).
-function tryResumeOnboarding() {
+// TT-210 (06-09-2026): vervangt Route B (TT-09). Was: bij elke login/refresh
+// automatisch de wizard openen op de bewaarde stap, ongeacht welke pagina de
+// gebruiker probeerde te bereiken — Ronald (die de app goed kent) begreep zelf
+// niet waarom dat gebeurde. Nu: sessionStorage blijft als vangnet tegen
+// dataverlies, maar het openen van de wizard is een bewuste klik op Mijn
+// Profiel, geen automatische omleiding. Een refresh laat je voortaan gewoon
+// op de pagina staan waar je was.
+
+// Pure check, geen neveneffecten — leest alleen, verandert niets. Gebruikt
+// door zowel de banner-render (loadMyProfile) als resumeOnboarding() zelf.
+function readSavedOnboarding() {
   let saved;
   try { saved = JSON.parse(sessionStorage.getItem(ONBOARDING_STORAGE_KEY) || 'null'); }
   catch (e) { saved = null; }
+  if (!saved || !saved.mid || !currentUser || saved.userId !== currentUser.id) return null;
+  return saved;
+}
 
-  if (!saved || !saved.mid || !currentUser || saved.userId !== currentUser.id) return false;
+// Toont, alleen als er echt iets klaarstaat, een banner op Mijn Profiel met
+// een expliciete "Verdergaan"-knop. Geen banner? Dan blijft het element leeg
+// en onzichtbaar — precies zoals bandInvitesBanner/founderOfferBanner ernaast.
+function renderOnboardingResumeBanner() {
+  const el = document.getElementById('onboardingResumeBanner');
+  if (!el) return;
+  const saved = readSavedOnboarding();
+  if (!saved) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Je bent nog bezig met je profiel</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Je kunt verdergaan waar je was gebleven.</div>
+      <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="resumeOnboarding()">Verdergaan</button>
+    </div>`;
+}
+
+// Voorheen tryResumeOnboarding() — liep automatisch bij elke login/refresh.
+// Nu alleen op een bewuste klik op de "Verdergaan"-knop hierboven.
+function resumeOnboarding() {
+  const saved = readSavedOnboarding();
+  if (!saved) return;
 
   editingMusicianId = saved.mid;
   myMusicianId = saved.mid;
@@ -6931,8 +7079,6 @@ function tryResumeOnboarding() {
   goTo(saved.step || 1);
   populateWizardFieldsFromState();
   document.getElementById('submitProfileBtn').textContent = 'Profiel aanmaken';
-  showToast('Welkom terug — je gaat verder waar je was gebleven.');
-  return true;
 }
 
 // TT-168-overgang (02-09-2026): bewerken loopt niet langer via de wizard.
@@ -6949,6 +7095,7 @@ async function editMyProfile() {
 
 async function loadMyProfile() {
   if (!currentUser) return;
+  renderOnboardingResumeBanner();
   const el = document.getElementById('myProfileContent');
   el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
 
@@ -9152,7 +9299,10 @@ function setInstrumentLevel(value) {
 
 function removeInstrumentFromSheet() {
   if (!instrumentLevelTarget) return;
+  // Knop heet "Terug" (Ronald, 06-09-2026) i.p.v. "Instrument verwijderen" —
+  // de actie zelf verwijdert nog steeds, dus deze melding maakt dat zichtbaar.
   quickRemoveInstrument(activeInstrumentPickerId, instrumentLevelTarget.instrument);
+  showToast('Instrument verwijderd.');
   closeInstrumentLevelSheet();
 }
 
@@ -9525,6 +9675,12 @@ function selectRepertoireType(el, val) {
 // bijbehorende data wijzigt (songs, doel/frequentie/ambitie, media/links) én
 // vanuit goTo() zelf, zodat een bestaand, al gevuld profiel de tekst meteen
 // bij binnenkomst verborgen toont — niet pas na de eerste nieuwe wijziging.
+// TT-209 (06-09-2026): Ronald liet de drie teksten zelf overal weghalen. De
+// drie <span>'s bestaan niet meer, dus deze functie en haar acht aanroepen
+// zijn nu een stille no-op (elke getElementById geeft null, elke if(x) vangt
+// dat af — geen foutmelding). Bewust laten staan i.p.v. acht aanroepen
+// mee-opruimen in dezelfde sessie als een tekstwijziging; restpunt voor een
+// eigen opschoningsronde.
 function updateOptionalStepHints() {
   const rep = document.getElementById('magOokLaterRepertoire');
   if (rep) rep.style.display = state.songs.length ? 'none' : '';
