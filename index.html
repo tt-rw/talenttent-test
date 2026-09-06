@@ -107,6 +107,12 @@
       radial-gradient(ellipse 60% 80% at 85% 90%, rgba(245,197,24,0.04) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
+    /* TT-vertraging (06-09-2026, gemeld door Ronald: schokkerig scrollen op
+       Android Chrome, overal in de app). Oorzaak: een position:fixed laag
+       over het hele scherm werd zonder eigen compositielaag steeds opnieuw
+       getekend bij elk scrollframe. will-change zet 'm op zijn eigen laag,
+       één keer getekend, alleen nog hercomponeren tijdens scroll. */
+    will-change: transform;
   }
 
 /* ── Sticky topbar (header + nav blijven altijd zichtbaar) ── */
@@ -3399,9 +3405,9 @@
            filters"; nu altijd zichtbaar naast Plaats, wat logischer is
            zodra je een vertrekpunt instelt. -->
       <div class="field" style="margin-bottom:16px;">
-        <label>Plaats</label>
         <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div class="city-search-wrap" style="flex:1;min-width:0;">
+          <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+            <label style="display:block;margin-bottom:4px;">Plaats</label>
             <input type="text" id="filterCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch(); scheduleSearchCityStatus('filterCity','filterCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterCityList'); runSearch(); })"
@@ -3547,9 +3553,9 @@
            daar. Straal stond hier ook voorheen verstopt achter "Meer
            filters" — nu altijd zichtbaar naast Plaats. -->
       <div class="field" style="margin-bottom:16px;">
-        <label>Plaats</label>
         <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div class="city-search-wrap" style="flex:1;min-width:0;">
+          <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+            <label style="display:block;margin-bottom:4px;">Plaats</label>
             <input type="text" id="filterBandCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch(); scheduleSearchCityStatus('filterBandCity','filterBandCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterBandCityList'); runBandSearch(); })"
@@ -3655,9 +3661,9 @@
            velden in dezelfde .filter-row) — alleen de mobiele weergave
            stapelde ze alsnog onder elkaar. Dat is nu ook op mobiel opgelost. -->
       <div class="field" style="margin-bottom:16px;">
-        <label>Plaats</label>
         <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div class="city-search-wrap" style="flex:1;min-width:0;">
+          <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+            <label style="display:block;margin-bottom:4px;">Plaats</label>
             <input type="text" id="filterSetlistCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch(); scheduleSearchCityStatus('filterSetlistCity','filterSetlistCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterSetlistCityList'); if(setlistWantedSongs.length) runSetlistSearch(); })"
@@ -4294,9 +4300,9 @@
          hieronder nog steeds je eigen locatie, ongeacht wat hier wordt
          getypt — zie de toelichting in searchMembersToAdd(). -->
     <div class="field" style="margin-bottom:16px;">
-      <label>Plaats</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
-        <div class="city-search-wrap" style="flex:1;min-width:0;">
+        <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+          <label style="display:block;margin-bottom:4px;">Plaats</label>
           <input type="text" id="memberSearchCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
             oninput="onCitySearchInput(this.value,'acMemberSearchCityList'); searchMembersToAdd(document.getElementById('memberSearchInput').value); scheduleSearchCityStatus('memberSearchCity','memberSearchCityStatus');"
             onblur="setTimeout(()=>closeAC('acMemberSearchCityList'),200)">
