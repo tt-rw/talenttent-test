@@ -1,6 +1,53 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 08-09-2026 — **Sessieplanning: volgende sessie start met TT-01 (e-maildigest, diagnose).** Laatst opgeleverde ticket blijft TT-225, zie hieronder.
+**Laatste update:** 08-09-2026 — **Bestandsopsplitsing uitgevoerd (index.html → 10 losse JS-bestanden + styles.css).** Sessieplanning TT-01 (e-maildigest, diagnose) staat nog steeds als eerstvolgend ticket, deze sessie bewust overgeslagen op Ronalds verzoek. Laatst opgeleverde ticket blijft TT-225.
+
+---
+
+**Bestandsopsplitsing (08-09-2026) — index.html opgesplitst volgens de Bestandsstructuur in CLAUDE.md. Geen ticket, puur structureel.**
+
+**Aanleiding:** CLAUDE.md schrijft de doelstructuur al langer voor (styles.css, core.js, utils.js, auth.js, postcode.js, wizard.js, search.js, musicians.js, bands.js, messages.js, modals-shared.js), maar de opsplitsing was nog niet uitgevoerd. Ronald gaf deze sessie expliciet opdracht: TT-01 overslaan, dit als enige taak.
+
+**Nulmeting (vóór de wijziging):** `index.html` 12834 regels, SHA-256 `f7036df27befbebefa879a6b7ce0b18b47bd73eef236d95d8ae4f3b2709041e4`. Haakjesbalans: `{}` 2337/2337, `()` 7178/7179 (bekende onbalans van 1), `[]` 382/382. 356 functies.
+
+**Aanpak:** de CSS (tussen `<style>` en `</style>`) en het hoofdscript (tussen `<script>` en `</script>`, ná de twee kleine TT-82-bootstrapscriptjes) zijn opgeknipt langs de bestaande `// ─── Sectie ───`-koppen in het bestand, en elke sectie is ongewijzigd (zelfde regels, zelfde volgorde) overgezet naar het bijpassende doelbestand. Geen functie herschreven, geen regel inhoudelijk gewijzigd — alleen verplaatst. De drie bootstrapscriptjes (TT-82-detectie in de `<head>`, de overlaymelding, en de allerlaatste `init()/initSearchFilters()/appInit()`-aanroep) blijven bewust inline in `index.html` staan, op precies dezelfde plek als voorheen — ze moeten respectievelijk vóór alle CSS/JS en ná alle tien bestanden draaien, en zijn te klein en te positiegevoelig om zonder risico te verplaatsen.
+
+**Verificatieplicht — Geverifieerd (niet aangenomen):** apart van gewone functiedefinities voert het bestand op een aantal plekken meteen bij het laden al code uit (niet pas bij een klik of databasegebeurtenis) — elke van die plekken is opgezocht en nagelopen. Vier daarvan roepen bij het laden direct een functie of waarde aan die ergens anders in het bestand staat: `musicianViewMode` en `bandViewMode` (roepen `standaardWeergave()` aan), `MEDIA_MIME_TYPES` (bouwt voort op `AVATAR_MIME_TYPES`), en de allerlaatste regel (`init(); initSearchFilters(); appInit();`). Bij de eerste drie staat de functie waar ze van afhangen vóór de aanroep, in hetzelfde doelbestand — geen probleem. De laatste (de start-aanroep) heeft alle tien bestanden nodig; die blijft daarom bewust inline in `index.html` staan, ná alle tien `<script src>`-tags, precies zoals hierboven beschreven. De overige meteen-uitvoerende plekken (een aantal `addEventListener`/`document.addEventListener`-registraties en twee IIFE's) roepen niets extern aan bij het laden zelf — alleen later, ván binnen hun callback, als iemand er echt op klikt — en zijn dus sowieso ongevoelig voor de volgorde van bestanden.
+
+**Laadvolgorde in `index.html`:** `core.js`, `utils.js`, `auth.js`, `postcode.js`, `wizard.js`, `search.js`, `musicians.js`, `bands.js`, `messages.js`, `modals-shared.js` — exact de volgorde uit CLAUDE.md. Alle bestanden laden als gewone `<script src>`-tags, geen `type="module"`. Functies blijven globaal bereikbaar (geen enkele losse module-scope), de bestaande `onclick="functienaam(...)"`-attributen in de HTML blijven ongewijzigd werken.
+
+**Regressiecontrole ná de wijziging:**
+- Reconstructie: alle tien JS-bestanden terug samengevoegd in de oorspronkelijke regelvolgorde is **byte-voor-byte identiek** aan het origineel (Python-vergelijking, geen enkel verschil).
+- Haakjesbalans over alle nieuwe bestanden samen (`index.html`+`styles.css`+de tien .js-bestanden): `{}` 2337/2337, `()` 7178/7179 (zelfde onbalans van 1, ongewijzigd), `[]` 382/382 — identiek aan de nulmeting.
+- Functielijst: 356 functienamen vóór en ná de opsplitsing, woord-voor-woord identiek (`diff` geeft geen verschil).
+- `node --check` geslaagd op elk van de tien bestanden apart, én op de volledige concatenatie in de echte laadvolgorde.
+- HTML buiten de twee vervangen blokken (kop t/m regel 47, de pagina-inhoud tussen CSS en hoofdscript, en de afsluiting) is byte-voor-byte ongewijzigd.
+
+**Getest met Playwright, 390×844 en 1440×900:** app laadt zonder JavaScript-fouten (`pageerror`: leeg op beide breedtes). Alle gecontroleerde functies uit alle tien bestanden zijn gedefinieerd (`appInit`, `showView`, `init`, `initSearchFilters`, `signIn`, `loadMyBands`, `openMusicianModal`, `resolveSearchOrigin`, `showToast`, `standaardWeergave`, `initPicker`, `buildMusicianDetailHTML`, `openWieBenJe`, `loadBandInvites` — één uit elk bestand). Landingspagina toont correct, kop/inhoud/onderbalk exact even breed als vóór de opsplitsing (390px: onderbalk zichtbaar; 1440px: bovenbalk met tabs, onderbalk verborgen). **Kanttekening, geen aanname:** de Supabase-CDN (`cdn.jsdelivr.net`) is in deze testomgeving niet bereikbaar (bekende sandboxbeperking, geen databasetoegang) — de app toont daardoor overal de bestaande TT-82-noodmelding ("De app kan nu niet starten"). Dit gebeurt al vóór enige databasecode draait en is dus geen gevolg van de opsplitsing; live inloggen/zoeken is deze sessie niet getest en moet door Ronald op talenttent.org zelf gecontroleerd worden.
+
+**Bestandsoverzicht (regels / top-level functies):**
+
+| Bestand | Regels | Functies |
+|---|---|---|
+| `index.html` (rest, na opsplitsing) | 1983 | — |
+| `styles.css` | 2593 | — |
+| `core.js` | 798 | 30 |
+| `utils.js` | 642 | 41 |
+| `auth.js` | 288 | 13 |
+| `postcode.js` | 449 | 17 |
+| `wizard.js` | 1319 | 46 |
+| `search.js` | 1275 | 42 |
+| `musicians.js` | 1715 | 85 |
+| `bands.js` | 939 | 34 |
+| `messages.js` | 426 | 15 |
+| `modals-shared.js` | 416 | 30 |
+
+**Aanname, expliciet gelabeld:** de indeling van elke sectie naar bestand volgt de inhoud van de code (bijv. "Muzikant detail modal" → `musicians.js`, "Postcode-opzoeking voor bands" → `postcode.js`). Een paar onderdelen worden door meerdere schermen gedeeld (bijv. `initPicker()`/`initInstrumentPicker()` door zowel de wizard als het tegeloverzicht) — die staan nu in `modals-shared.js`. Dit raakt de werking niet (alles blijft globaal, laadvolgorde is gecontroleerd), maar is een indelingskeuze, geen unieke, dwingende waarheid.
+
+**Nog te doen door Ronald:**
+1. Alle twaalf bestanden (`index.html`, `styles.css`, de tien `.js`-bestanden) samen uploaden naar GitHub — ze horen bij elkaar, los uploaden breekt de app.
+2. Smoke-test op talenttent-test: inloggen, zoeken, een profiel bewerken, een bericht sturen — één keer per hoofdfunctie, om te bevestigen dat de live Supabase-omgeving (die deze sessie niet bereikbaar was) alles nog aanroept zoals verwacht.
+3. Volgende sessie: TT-01-diagnose (vier controlepunten, zie hierboven).
 
 ---
 
