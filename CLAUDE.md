@@ -17,6 +17,10 @@ Eén bestand index.html (wordt nu opgesplitst), vanilla JS, Supabase-backend
 - tt-rw/talenttent-test — externe bètatest
 
 ## Werkregels, verplicht elke sessie
+0. Commit en push altijd rechtstreeks naar `main`, geen aparte branch, tenzij
+   expliciet gevraagd. Een ticket is pas klaar als `main` is bijgewerkt — niet
+   als er een branch of pull request klaarstaat. Ronald uploadt zelf geen
+   bestanden meer naar GitHub.
 1. Eén ticket per sessie. Nooit een tweede starten zonder expliciet verzoek.
 2. Verificatieplicht: elke uitspraak labelen als Geverifieerd / Aanname / Onbekend.
    Nooit "zou moeten werken".

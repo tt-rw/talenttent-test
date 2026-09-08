@@ -45,9 +45,10 @@
 **Aanname, expliciet gelabeld:** de indeling van elke sectie naar bestand volgt de inhoud van de code (bijv. "Muzikant detail modal" → `musicians.js`, "Postcode-opzoeking voor bands" → `postcode.js`). Een paar onderdelen worden door meerdere schermen gedeeld (bijv. `initPicker()`/`initInstrumentPicker()` door zowel de wizard als het tegeloverzicht) — die staan nu in `modals-shared.js`. Dit raakt de werking niet (alles blijft globaal, laadvolgorde is gecontroleerd), maar is een indelingskeuze, geen unieke, dwingende waarheid.
 
 **Nog te doen door Ronald:**
-1. Alle twaalf bestanden (`index.html`, `styles.css`, de tien `.js`-bestanden) samen uploaden naar GitHub — ze horen bij elkaar, los uploaden breekt de app.
-2. Smoke-test op talenttent-test: inloggen, zoeken, een profiel bewerken, een bericht sturen — één keer per hoofdfunctie, om te bevestigen dat de live Supabase-omgeving (die deze sessie niet bereikbaar was) alles nog aanroept zoals verwacht.
-3. Volgende sessie: TT-01-diagnose (vier controlepunten, zie hierboven).
+1. Smoke-test op talenttent-test (`main` staat al live): inloggen, zoeken, een profiel bewerken, een bericht sturen — één keer per hoofdfunctie, om te bevestigen dat de live Supabase-omgeving (die deze sessie niet bereikbaar was) alles nog aanroept zoals verwacht.
+2. Volgende sessie: TT-01-diagnose (vier controlepunten, zie hierboven).
+
+**Werkwijzewijziging, deze sessie (Ronalds instructie):** commits gaan voortaan rechtstreeks naar `main`, geen aparte branch meer, tenzij expliciet gevraagd. Een ticket is pas klaar als `main` is bijgewerkt. Ronald uploadt zelf geen bestanden meer naar GitHub. Vastgelegd in CLAUDE.md, werkregel 0. Deze sessie is met terugwerkende kracht toegepast: de branch van eerder in de sessie is naar `main` doorgezet.
 
 ---
 
