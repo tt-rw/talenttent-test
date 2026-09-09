@@ -640,3 +640,108 @@ function removeSong(i) {
   renderSongs();
 }
 
+
+// ─── Draaiwiel (huisstijlcomponent voor getalvelden) ─────────────────────────
+// TT-232 (09-09-2026, Ronalds schets): getalvelden op het zoekscherm worden
+// een verticaal draaiwiel met vaste stappen. Reden: een vrij getalveld laat
+// waarden toe die niets opleveren (leeftijd 37 t/m 38, straal 1 km) en vraagt
+// op een telefoon om het toetsenbord. Een wiel met vaste stappen kan alleen
+// zinnige waarden aannemen.
+//
+// Het wiel schrijft zijn waarde altijd naar een verborgen invoerveld
+// (cfg.inputId). Alle bestaande code die die waarde uitleest, blijft daardoor
+// ongewijzigd werken.
+const WHEEL_ITEM_H = 30;   // moet gelijk zijn aan .wheel-item in styles.css
+const WHEELS = {};
+
+// cfg: { id, inputId, values[], value, onChange, ariaLabel, labels? }
+// values mag '' bevatten; dat is de stand "Geen" (filter uit).
+function initWheel(cfg) {
+  const el = document.getElementById(cfg.id);
+  if (!el) return;
+  const labelOf = (v) => (cfg.labels && cfg.labels[v] != null) ? cfg.labels[v]
+                       : (v === '' ? 'Geen' : String(v));
+  el.classList.add('wheel');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('role', 'listbox');
+  if (cfg.ariaLabel) el.setAttribute('aria-label', cfg.ariaLabel);
+  el.innerHTML = `
+    <div class="wheel-scroll">
+      <div class="wheel-pad"></div>
+      ${cfg.values.map((v, i) => `<div class="wheel-item" role="option" data-i="${i}">${escHtml(labelOf(v))}</div>`).join('')}
+      <div class="wheel-pad"></div>
+    </div>
+    <div class="wheel-band" aria-hidden="true"></div>`;
+
+  const scroll = el.querySelector('.wheel-scroll');
+  const state = { el, scroll, cfg, values: cfg.values.slice(), index: 0, timer: null };
+  WHEELS[cfg.id] = state;
+
+  // Klikken op een waarde kiest die waarde — sneller dan scrollen bij een
+  // korte lijst (niveau 1 t/m 5).
+  el.querySelectorAll('.wheel-item').forEach(item => {
+    item.addEventListener('click', () => setWheelIndex(cfg.id, parseInt(item.dataset.i), true));
+  });
+
+  // Tijdens het scrollen leest de app niet elke pixel uit: pas 140 ms na de
+  // laatste beweging staat het wiel stil en telt de waarde. Anders zou elke
+  // tussenliggende waarde een zoekopdracht starten.
+  scroll.addEventListener('scroll', () => {
+    clearTimeout(state.timer);
+    state.timer = setTimeout(() => commitWheelScroll(cfg.id), 140);
+  });
+
+  el.addEventListener('keydown', (e) => {
+    const step = (e.key === 'ArrowUp' || e.key === 'PageUp') ? -1
+               : (e.key === 'ArrowDown' || e.key === 'PageDown') ? 1 : 0;
+    if (step) {
+      e.preventDefault();
+      const jump = (e.key === 'PageUp' || e.key === 'PageDown') ? 3 : 1;
+      setWheelIndex(cfg.id, state.index + step * jump, true);
+    } else if (e.key === 'Home') { e.preventDefault(); setWheelIndex(cfg.id, 0, true); }
+    else if (e.key === 'End')    { e.preventDefault(); setWheelIndex(cfg.id, state.values.length - 1, true); }
+  });
+
+  const start = cfg.values.indexOf(cfg.value);
+  setWheelIndex(cfg.id, start >= 0 ? start : 0, false);
+}
+
+// Leest de stand af nadat het wiel is stilgevallen.
+function commitWheelScroll(id) {
+  const s = WHEELS[id];
+  if (!s) return;
+  let i = Math.round(s.scroll.scrollTop / WHEEL_ITEM_H);
+  i = Math.max(0, Math.min(s.values.length - 1, i));
+  if (i !== s.index) setWheelIndex(id, i, true);
+}
+
+// notify=false zet de stand zonder de zoekopdracht opnieuw te starten —
+// gebruikt bij het opbouwen en bij "Filters wissen" (die zoekt zelf één keer).
+function setWheelIndex(id, i, notify) {
+  const s = WHEELS[id];
+  if (!s) return;
+  i = Math.max(0, Math.min(s.values.length - 1, i));
+  const changed = i !== s.index;
+  s.index = i;
+  s.scroll.scrollTop = i * WHEEL_ITEM_H;
+  s.el.querySelectorAll('.wheel-item').forEach((item, n) => {
+    const on = n === i;
+    item.classList.toggle('selected', on);
+    item.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  const input = s.cfg.inputId && document.getElementById(s.cfg.inputId);
+  if (input) input.value = s.values[i];
+  if (notify && changed && typeof s.cfg.onChange === 'function') s.cfg.onChange(s.values[i]);
+}
+
+function getWheelValue(id) {
+  const s = WHEELS[id];
+  return s ? s.values[s.index] : null;
+}
+
+function setWheelValue(id, value, notify) {
+  const s = WHEELS[id];
+  if (!s) return;
+  const i = s.values.indexOf(value);
+  setWheelIndex(id, i >= 0 ? i : 0, !!notify);
+}

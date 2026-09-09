@@ -41,12 +41,26 @@ const REPERTOIRE_TYPE_LABELS = {
 
 let filterInstruments = [];
 let filterGenres      = [];
-let filterGoal        = null;
 let searchSortMode    = 'score';
-// TT-01: Zoekvoorkeuren (⋯-menu op "Vind een muzikant") — instrumenten die
-// je zoekt in een ander (musician_wanted) + e-maildigestvoorkeur. Beïnvloedt
-// alleen de digest op de achtergrond, nooit de live zoekresultaten hierboven.
-let wantedInstruments  = [];
+
+// TT-232 (09-09-2026): vaste stappen voor de draaiwielen. Lege waarde = het
+// filter staat uit ("Geen" bovenaan het wiel).
+// Leeftijd: per 3 jaar tot 24, daarna per 5 — bij tieners telt één jaar
+// verschil zwaar, bij volwassenen niet meer.
+const WHEEL_AGE_MIN = [''].concat([13,16,19,22], rangeStep(25, 95, 5));
+const WHEEL_AGE_MAX = [''].concat([15,18,21,24], rangeStep(30, 95, 5), [99]);
+const WHEEL_NIVEAU  = ['', 1, 2, 3, 4, 5];
+// Straal: per 5 km tot 50, daarna per 25 tot 500.
+const WHEEL_RADIUS  = rangeStep(5, 50, 5).concat(rangeStep(75, 500, 25));
+
+function rangeStep(from, to, step) {
+  const out = [];
+  for (let v = from; v <= to; v += step) out.push(v);
+  return out;
+}
+
+// TT-01 / TT-232: e-mailvoorkeuren, nu onder Instellingen. Beïnvloedt alleen
+// de e-mail op de achtergrond, nooit de live zoekresultaten.
 let digestFrequencyValue = 'daily';
 let emailThemeValue = 'light';
 let lastMusicianResults = [];
@@ -64,20 +78,23 @@ function standaardWeergave() {
 let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || standaardWeergave();
 // TT-U13: zet de markering in beide schakelaars gelijk aan de werkelijke
 // stand. De HTML markeert "Lijst" vast; op een telefoon klopt dat niet meer.
+// TT-232 (09-09-2026): de weergavekeuze bij Muzikanten is een keuzelijst
+// geworden; bij Bands staat nog de schakelbalk. Deze functie zet beide.
 function syncViewToggles() {
-  [['#musicianViewToggle', musicianViewMode], ['#bandViewToggle', bandViewMode]].forEach(([sel, mode]) => {
-    const wrap = document.querySelector(sel);
-    if (!wrap) return;
+  const musicianSel = document.getElementById('musicianViewToggle');
+  if (musicianSel) musicianSel.value = musicianViewMode;
+  const wrap = document.querySelector('#bandViewToggle');
+  if (wrap) {
     wrap.querySelectorAll('.segmented-btn').forEach(x => x.classList.remove('selected'));
-    wrap.querySelector(`[data-view="${mode}"]`)?.classList.add('selected');
-  });
+    wrap.querySelector(`[data-view="${bandViewMode}"]`)?.classList.add('selected');
+  }
 }
 
 function setMusicianViewMode(mode) {
   musicianViewMode = mode;
   try { localStorage.setItem('tt_musicianViewMode', mode); } catch(e) {}
-  document.querySelectorAll('#musicianViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
-  document.querySelector(`#musicianViewToggle [data-view="${mode}"]`).classList.add('selected');
+  const sel = document.getElementById('musicianViewToggle');
+  if (sel) sel.value = mode;
   if (lastMusicianResults.length) renderCappedMusicianResults();
 }
 // Afstand per muzikant-id, gevuld door zoekresultaten (gewoon zoeken en setlist-
@@ -125,6 +142,31 @@ function scheduleSetlistAutoSearch() {
   setlistAutoSearchTimeout = setTimeout(() => { if (setlistWantedSongs.length) runSetlistSearch(); }, 400);
 }
 
+// TT-232 (09-09-2026, besluit Ronald): de matchscore komt niet meer uit de
+// database en zegt niets meer over jouw eigen profiel. Hij telt uitsluitend
+// wat je zelf hebt ingevuld:
+//   3 punten per gekozen instrument dat deze muzikant speelt;
+//   2 punten per gekozen genre dat deze muzikant speelt.
+// Instrument weegt zwaarder dan genre: je zoekt een bassist, geen genre.
+// Straal telt niet mee als punten — die is al een harde grens, dus iedereen
+// in de lijst zou hetzelfde aantal punten krijgen.
+function musicianFilterScore(m) {
+  let score = 0;
+  if (filterInstruments.length) {
+    const mine = (m.musician_instruments || []).map(x => x.instrument);
+    score += 3 * filterInstruments.filter(i => mine.includes(i)).length;
+  }
+  if (filterGenres.length) {
+    const mine = (m.musician_genres || []).map(x => x.genre);
+    score += 2 * filterGenres.filter(g => mine.includes(g)).length;
+  }
+  return score;
+}
+
+// TT-232: bij "Beste match" beslist eerst de afstand, afgerond op hele
+// kilometers, daarna het aantal punten. Zonder die afronding zou "Beste
+// match" letterlijk dezelfde lijst geven als "Dichtstbijzijnde" — twee
+// gelijke afstanden op de komma komen vrijwel nooit voor.
 function sortMusicianList(list) {
   list.sort((a, b) => {
     if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
@@ -134,15 +176,12 @@ function sortMusicianList(list) {
     if (searchSortMode === 'newest') {
       return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
     }
-    // TT-55 (12-08-2026): bij een gelijke (of ontbrekende) matchscore besliste
-    // dit voorheen `return 0` — een onvoorspelbare volgorde uit de database.
-    // Vastgelegd gedrag: bij gelijke stand eerst afstand, dan naam.
-    if (a.matchScore != null && b.matchScore != null && a.matchScore !== b.matchScore) {
-      return b.matchScore - a.matchScore;
+    if (a.distance_km != null && b.distance_km != null) {
+      const kmA = Math.round(a.distance_km);
+      const kmB = Math.round(b.distance_km);
+      if (kmA !== kmB) return kmA - kmB;
     }
-    if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
-      return a.distance_km - b.distance_km;
-    }
+    if (a.matchScore !== b.matchScore) return (b.matchScore || 0) - (a.matchScore || 0);
     const nameA = (displayNameOf(a) || '').toLowerCase();
     const nameB = (displayNameOf(b) || '').toLowerCase();
     return nameA.localeCompare(nameB, 'nl');
@@ -152,17 +191,19 @@ function sortMusicianList(list) {
 
 // Sorteren staat bij het resultaat: her-sorteert direct de al opgehaalde
 // resultaten, geen nieuwe zoekopdracht nodig.
-function setSearchSortMode(el, mode) {
+// TT-232: krijgt sinds de keuzelijst alleen nog de waarde mee, geen element.
+function setSearchSortMode(mode) {
   // "Dichtstbijzijnde" zonder afstandsgegevens (geen Plaats ingevuld als
-  // vertrekpunt) zou de knop laten oplichten zonder dat er iets verandert —
+  // vertrekpunt) zou de keuze laten staan zonder dat er iets verandert —
   // verwarrend. Geef dan een duidelijke melding i.p.v. stilzwijgend niets doen.
   if (mode === 'distance' && lastMusicianResults.length && !lastMusicianResults.some(m => m.distance_km != null)) {
     showToast('Vul een plaats in bij de zoekfilters om op afstand te sorteren.');
+    document.getElementById('filterSortMode').value = searchSortMode;
     return;
   }
   searchSortMode = mode;
-  document.querySelectorAll('#filterSortMode .segmented-btn').forEach(x => x.classList.remove('selected'));
-  el.classList.add('selected');
+  const sel = document.getElementById('filterSortMode');
+  if (sel) sel.value = mode;
   if (lastMusicianResults.length) {
     sortMusicianList(lastMusicianResults);
     renderCappedMusicianResults();
@@ -195,32 +236,67 @@ function initSearchFilters() {
     onChange: runSearch
   });
 
-  // TT-01: geen singleMax — dit is een opgeslagen voorkeur voor de digest,
-  // geen live resultatenlijst. De max-1-regel (TT-55) gold specifiek voor
-  // een overzichtelijke resultatenlijst; die reden geldt hier niet.
-  initPicker({
-    id: 'wantedInstruments',
-    fieldId: 'wantedInstrumentsField', badgeRowId: 'wantedInstrumentsBadgeRow',
-    options: INSTRUMENTS, getList: () => wantedInstruments,
-    placeholder: 'Instrument kiezen',
-    sheetTitle: 'Instrument kiezen'
-  });
+  // TT-232 (09-09-2026): de vier draaiwielen. Elk wiel schrijft naar het
+  // verborgen invoerveld dat runSearch() al uitlas — de filterlogica zelf is
+  // dus niet gewijzigd. Straal heeft geen stand "Geen": zoeken zonder straal
+  // bestaat niet, 5 km is de kleinste.
+  initWheel({ id: 'wheelAgeMin', inputId: 'filterAgeMin', values: WHEEL_AGE_MIN,
+              value: '', ariaLabel: 'Leeftijd vanaf',
+              onChange: () => { corrigeerBereik('wheelAgeMin', 'wheelAgeMax', 'min'); runSearch(); } });
+  initWheel({ id: 'wheelAgeMax', inputId: 'filterAgeMax', values: WHEEL_AGE_MAX,
+              value: '', ariaLabel: 'Leeftijd tot en met',
+              onChange: () => { corrigeerBereik('wheelAgeMin', 'wheelAgeMax', 'max'); runSearch(); } });
+  initWheel({ id: 'wheelNiveauMin', inputId: 'filterNiveauMin', values: WHEEL_NIVEAU,
+              value: '', ariaLabel: 'Niveau vanaf',
+              onChange: () => { corrigeerBereik('wheelNiveauMin', 'wheelNiveauMax', 'min'); toonNiveauBereik(); runSearch(); } });
+  initWheel({ id: 'wheelNiveauMax', inputId: 'filterNiveauMax', values: WHEEL_NIVEAU,
+              value: '', ariaLabel: 'Niveau tot en met',
+              onChange: () => { corrigeerBereik('wheelNiveauMin', 'wheelNiveauMax', 'max'); toonNiveauBereik(); runSearch(); } });
+  initWheel({ id: 'wheelRadius', inputId: 'filterRadius', values: WHEEL_RADIUS,
+              value: 5, ariaLabel: 'Zoekstraal in kilometers', onChange: runSearch });
+  toonNiveauBereik();
+}
 
-  const goalWrap = document.getElementById('filterGoals');
-  Object.entries(GOAL_LABELS).forEach(([val, label]) => {
-    const t = document.createElement('div');
-    t.className = 'tag';
-    t.textContent = label;
-    t.style.fontSize = '12px';
-    t.style.padding = '6px 12px';
-    t.onclick = () => {
-      document.querySelectorAll('#filterGoals .tag').forEach(x => x.classList.remove('selected'));
-      if (filterGoal === val) { filterGoal = null; }
-      else { filterGoal = val; t.classList.add('selected'); }
-      runSearch();
-    };
-    goalWrap.appendChild(t);
-  });
+// TT-232 (09-09-2026): een minimum boven het maximum geeft altijd nul
+// resultaten. In plaats van dat te laten gebeuren, schuift het andere wiel
+// mee naar de dichtstbijzijnde waarde die het bereik heel houdt.
+function corrigeerBereik(minId, maxId, gewijzigd) {
+  const min = getWheelValue(minId);
+  const max = getWheelValue(maxId);
+  if (min === '' || max === '' || Number(min) <= Number(max)) return;
+  if (gewijzigd === 'min') {
+    const nieuw = WHEELS[maxId].values.find(v => v !== '' && Number(v) >= Number(min));
+    setWheelValue(maxId, nieuw === undefined ? '' : nieuw, false);
+  } else {
+    const omgekeerd = WHEELS[minId].values.slice().reverse();
+    const nieuw = omgekeerd.find(v => v !== '' && Number(v) <= Number(max));
+    setWheelValue(minId, nieuw === undefined ? '' : nieuw, false);
+  }
+}
+
+// De naam van een niveau, uit dezelfde tabel als de i-knop toont
+// (NIVEAU_INFO_MUSICIAN_ROWS in bands.js) — één bron, geen tweede lijst die
+// uit de pas kan lopen. "1. Beginner (Bedroom)" wordt "Beginner".
+function niveauNaam(n) {
+  try {
+    return NIVEAU_INFO_MUSICIAN_ROWS[n - 1][0].replace(/^\d+\.\s*/, '').replace(/\s*\(.*\)\s*$/, '');
+  } catch (e) {
+    return '';
+  }
+}
+
+// Leest het gekozen niveaubereik terug in woorden onder de wielen.
+function toonNiveauBereik() {
+  const el = document.getElementById('filterNiveauHint');
+  if (!el) return;
+  const min = getWheelValue('wheelNiveauMin');
+  const max = getWheelValue('wheelNiveauMax');
+  const naam = (n) => { const t = niveauNaam(n); return t ? ` — ${t}` : ''; };
+  if (min === '' && max === '') el.textContent = 'Niveau: alle niveaus';
+  else if (min !== '' && max === '') el.textContent = `Niveau ${min} en hoger${naam(min)}`;
+  else if (min === '' && max !== '') el.textContent = `Niveau ${max} en lager${naam(max)}`;
+  else if (min === max) el.textContent = `Alleen niveau ${min}${naam(min)}`;
+  else el.textContent = `Niveau ${min} t/m ${max} — ${niveauNaam(min)} t/m ${niveauNaam(max)}`;
 }
 
 // Straal-invoer strikt uitlezen: 0 km moet ook echt 0 km betekenen (0 is
@@ -260,18 +336,19 @@ function resetMusicianSearch() {
   document.getElementById('filterName').value = '';
   document.getElementById('filterCity').value = '';
   document.getElementById('filterCityStatus').textContent = '';
-  document.getElementById('filterAgeMin').value = '';
-  document.getElementById('filterAgeMax').value = '';
-  document.getElementById('filterNiveauMin').value = '';
-  document.getElementById('filterNiveauMax').value = '';
-  document.getElementById('filterRadius').value = 25;
+  // TT-232: de wielen terug naar hun beginstand. false = niet zelf opnieuw
+  // zoeken; deze functie doet dat hieronder één keer.
+  setWheelValue('wheelAgeMin', '', false);
+  setWheelValue('wheelAgeMax', '', false);
+  setWheelValue('wheelNiveauMin', '', false);
+  setWheelValue('wheelNiveauMax', '', false);
+  setWheelValue('wheelRadius', 5, false);
+  toonNiveauBereik();
   filterInstruments = [];
   filterGenres = [];
-  filterGoal = null;
   renderPickerBadges(PICKERS.filterInstruments);
   renderPickerBadges(PICKERS.filterGenres);
-  document.querySelectorAll('#filterGoals .tag').forEach(t => t.classList.remove('selected'));
-  selectSortModeByValue('filterSortMode', hasOwnProfile ? 'score' : 'distance');
+  selectSortModeByValue('filterSortMode', 'score');
   // TT-10: niet leeg laten staan — meteen opnieuw zoeken zonder filters,
   // consistent met "bij openen/wisselen van tabblad altijd een resultaat".
   runSearch();
@@ -403,7 +480,7 @@ async function runSearch() {
       }));
     }
 
-    // Client-side filters (naam, plaats, leeftijd, instrument, niveau, genre, doel)
+    // Client-side filters (naam, plaats, leeftijd, instrument, niveau, genre)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
     const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 150;
     // TT-51: niveau-bereik, aaneengesloten (1-5). Leeg = geen ondergrens/bovengrens.
@@ -421,7 +498,6 @@ async function runSearch() {
     const filtered = musicians.filter(m => {
       const age = ageOf(m);
       if (age < ageMin || age > ageMax) return false;
-      if (filterGoal && m.goal !== filterGoal) return false;
       // TT-43: het naamveld doorzoekt precies dát wat je in de lijst ook ziet
       // — voor een bezoeker is m.fname leeg, dus dan blijft het zoeken op
       // gebruikersnaam. Anders zou je op een naam kunnen zoeken die je zelf
@@ -457,7 +533,10 @@ async function runSearch() {
     filtered.forEach(m => {
       const info = matchInfo[m.id];
       m.distance_km = info ? info.distance_km : null;
-      m.matchScore  = info ? info.score : null;
+      // TT-232: de score uit de database (genre-gelijkenis met je eigen
+      // profiel) wordt niet meer gebruikt. De punten komen nu uit de
+      // ingevulde filters — zie musicianFilterScore().
+      m.matchScore  = musicianFilterScore(m);
       m.isStale     = info ? info.is_stale : false;
       musicianDistanceCache[m.id] = m.distance_km;
     });

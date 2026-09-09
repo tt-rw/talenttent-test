@@ -2645,3 +2645,84 @@
     .backend-error-overlay { left: 25%; right: 25%; }
   }
 
+
+  /* ─── Draaiwiel (TT-232, 09-09-2026) ──────────────────────────────────────
+     Huisstijlcomponent voor getalvelden: leeftijd, niveau, straal. Vaste
+     stappen, drie waarden zichtbaar, de middelste is gekozen. De hoogte van
+     .wheel-item (30px) staat ook in utils.js als WHEEL_ITEM_H — die twee
+     moeten gelijk blijven, anders leest het wiel de verkeerde waarde af. */
+  .wheel {
+    position: relative;
+    width: 68px;
+    height: 90px;
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .wheel:focus { outline: none; border-color: var(--accent); }
+  .wheel-scroll {
+    height: 100%;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .wheel-scroll::-webkit-scrollbar { display: none; }
+  /* Eén lege regel boven en onder, zodat de eerste en de laatste waarde ook
+     in het midden kunnen staan. */
+  .wheel-pad { height: 30px; }
+  .wheel-item {
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    scroll-snap-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .wheel-item.selected { color: var(--text); font-weight: 700; font-size: var(--fs-md); }
+  /* De markering van de gekozen regel. Scrollt niet mee. */
+  .wheel-band {
+    position: absolute;
+    left: 0; right: 0; top: 30px;
+    height: 30px;
+    border-top: var(--line) solid var(--accent);
+    border-bottom: var(--line) solid var(--accent);
+    pointer-events: none;
+  }
+  /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
+     In een knoppenrij maakt die marge de twee knoppen 8px ongelijk hoog —
+     precies het verschil dat TT-228 wegnam. Hier dus terugzetten op 0. */
+  .btn-row .search-btn { margin-top: 0; }
+
+  /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */
+  .label-with-info { display: flex; align-items: center; gap: 8px; }
+  /* Terugleesregel onder de niveauwielen: "Niveau 3 t/m 5 — Half-Gevorderd
+     t/m Professioneel". Vaste hoogte, zodat de knoppen eronder niet
+     verspringen bij het draaien. */
+  .wheel-hint {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    margin: -8px 0 16px;
+    min-height: 16px;
+  }
+
+  .wheel-pair { display: flex; align-items: center; gap: 8px; }
+  .wheel-sep { color: var(--muted); font-size: var(--fs-sm); }
+
+  /* Leeftijd en Niveau staan op één regel: vier wielen naast elkaar. Op een
+     telefoon past dat alleen met smallere wielen en kleinere tussenruimtes —
+     zonder deze regels valt het vierde wiel buiten het paneel. */
+  .wheel-filter-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .wheel-filter-row .field { min-width: 0; }
+  @media (max-width: 560px) {
+    .wheel-filter-row { gap: 12px; }
+    .wheel-filter-row .wheel { width: 48px; }
+    .wheel-filter-row .wheel-pair { gap: 4px; }
+  }

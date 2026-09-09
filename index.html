@@ -885,19 +885,10 @@
   <div id="searchModeMusician">
   <div class="search-wrap">
     <div class="search-filters">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div class="filter-title" style="margin-bottom:0;">Vind een muzikant</div>
-        <!-- TT-01 (28-08-2026): Zoekvoorkeuren horen bij het zoeken, niet bij
-             Mijn Profiel (Ronalds besluit) — huisstijl §8-menupatroon. -->
-        <div class="profile-actions-menu-wrap">
-          <button class="nav-menu-btn" id="searchPrefsMoreBtn" onclick="toggleSearchPrefsMenu(event)" aria-label="Meer opties" title="Meer">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-          </button>
-          <div class="inline-menu-dropdown" id="searchPrefsMoreDropdown">
-            <button class="nav-menu-item" onclick="closeSearchPrefsMenu();openSearchPrefsModal()">Zoekvoorkeuren</button>
-          </div>
-        </div>
-      </div>
+      <!-- TT-232 (09-09-2026, Ronalds schets): het ⋯-menu is hier weg. De
+           inhoud ervan ging over e-mail, niet over zoeken, en staat nu onder
+           Instellingen → E-mailvoorkeuren. -->
+      <div class="filter-title">Vind een muzikant</div>
 
       <div class="filter-row single">
         <div class="field">
@@ -923,34 +914,56 @@
               onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
+          <!-- TT-232: straal is een draaiwiel geworden. 5 t/m 50 km per 5,
+               daarna per 25 tot 500 km. Startwaarde 5 km. -->
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
-            <div class="radius-row">
-              <input type="number" id="filterRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); runSearch();">
-              <span style="color:var(--muted);font-size:13px;">km</span>
+            <div class="wheel-pair">
+              <div id="wheelRadius"></div>
+              <span class="wheel-sep">km</span>
             </div>
+            <input type="hidden" id="filterRadius" value="5">
           </div>
         </div>
         <div id="filterCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
       </div>
 
-      <!-- TT-136 (23-08-2026): stond hiervoor allemaal altijd uitgeklapt —
-           acht velden vóór de resultaten. Gebruikersnaam+Plaats blijven
-           direct zichtbaar (de twee snelste filters); de rest staat nu
-           samengevouwen achter een toggle, zodat de resultaten na het
-           openen van dit scherm dichterbij staan. -->
-      <button type="button" class="btn btn-ghost" id="musicianMoreFiltersToggle" onclick="toggleMoreFilters('musician')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
-      <div id="musicianMoreFilters" style="display:none;">
-      <div class="filter-row single">
+      <!-- TT-232 (09-09-2026): de toggle "Meer filters" is weg — alle filters
+           staan weer altijd open. Dat kan nu, omdat Doel eruit is en Leeftijd
+           en Niveau samen op één regel staan. Vervangt TT-136 (23-08-2026).
+           Leeftijd en Niveau zijn draaiwielen met vaste stappen; "Geen"
+           bovenaan elk wiel zet dat filter uit. -->
+      <div class="wheel-filter-row">
         <div class="field">
           <label>Leeftijd</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
-            <span style="color:var(--muted);font-size:13px;">t/m</span>
-            <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
+          <div class="wheel-pair">
+            <div id="wheelAgeMin"></div>
+            <span class="wheel-sep">t/m</span>
+            <div id="wheelAgeMax"></div>
           </div>
+          <input type="hidden" id="filterAgeMin">
+          <input type="hidden" id="filterAgeMax">
+        </div>
+        <div class="field">
+          <!-- TT-232 (09-09-2026, Ronalds schets): dezelfde i-knop als bij
+               "Mijn Instrumenten" in de wizard, met dezelfde uitleg. Een kaal
+               cijfer 1 t/m 5 zegt niets zonder die tabel. -->
+          <label class="label-with-info">
+            <span>Niveau</span>
+            <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" aria-label="Wat betekenen de niveaus 1 tot en met 5?" title="Toelichting op niveau">i</button>
+          </label>
+          <div class="wheel-pair">
+            <div id="wheelNiveauMin"></div>
+            <span class="wheel-sep">t/m</span>
+            <div id="wheelNiveauMax"></div>
+          </div>
+          <input type="hidden" id="filterNiveauMin">
+          <input type="hidden" id="filterNiveauMax">
         </div>
       </div>
+      <!-- Leest het gekozen bereik terug in woorden, zodat het cijfer op het
+           wiel betekenis krijgt zonder de tabel te openen. -->
+      <div id="filterNiveauHint" class="wheel-hint"></div>
 
       <!-- TT-10: filters ververst nu automatisch bij elke klik/wijziging;
            knop blijft staan als duidelijk, expliciet alternatief (bijv. na
@@ -978,23 +991,9 @@
       <!-- TT-51 (12-08-2026): niveau als filter, geen score — bereik met
            onder- en bovengrens, aaneengesloten (vastgelegd door Ronald). Geldt
            voor het/de hierboven gekozen instrument(en); zonder gekozen
-           instrument geldt het bereik tegen élk instrument dat iemand speelt. -->
-      <div class="filter-row single" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Niveau</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <select id="filterNiveauMin" onchange="runSearch()" style="width:90px;">
-              <option value="">Min</option>
-              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-            </select>
-            <span style="color:var(--muted);font-size:13px;">t/m</span>
-            <select id="filterNiveauMax" onchange="runSearch()" style="width:90px;">
-              <option value="">Max</option>
-              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-            </select>
-          </div>
-        </div>
-      </div>
+           instrument geldt het bereik tegen élk instrument dat iemand speelt.
+           TT-232 (09-09-2026): staat nu als draaiwiel bovenaan, naast
+           Leeftijd. De werking van het filter zelf is niet gewijzigd. -->
 
       <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
@@ -1007,17 +1006,15 @@
         </div>
       </div>
 
-      <div class="filter-row single doel-filter" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Doel</label>
-          <div class="tag-grid" id="filterGoals"></div>
-        </div>
-      </div>
-      </div>
+      <!-- TT-232 (09-09-2026, Ronalds besluit): het Doel-filter is hier weg.
+           Het doel blijft op het profiel staan; als zoekfilter voegde het te
+           weinig toe tegenover de ruimte die het kostte. -->
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
+      <!-- TT-232: primaire knop rechts, secundaire links — huisstijl §10
+           (TT-228). .btn-row zorgt voor twee exact gelijke knoppen. -->
+      <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetMusicianSearch()">Filters wissen</button>
+        <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
       </div>
     </div>
 
@@ -1027,20 +1024,24 @@
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
     <div id="sortBarMusician" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
+      <!-- TT-232 (09-09-2026, Ronalds schets): keuzelijsten in plaats van
+           schakelbalken. Beide staan er altijd, ook uitgelogd — "Beste match"
+           rekent sinds TT-232 met de ingevulde filters en heeft dus geen
+           eigen profiel meer nodig. -->
       <div class="field">
-        <label>Sorteren op</label>
-        <div class="segmented-control" id="filterSortMode">
-          <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setSearchSortMode(this,'score')">Beste match</div>
-          <div class="segmented-btn" data-mode="distance" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-          <div class="segmented-btn" data-mode="newest" onclick="setSearchSortMode(this,'newest')">Nieuwste</div>
-        </div>
+        <label for="filterSortMode">Sorteren op</label>
+        <select id="filterSortMode" onchange="setSearchSortMode(this.value)">
+          <option value="score">Beste match</option>
+          <option value="distance">Dichtstbijzijnde</option>
+          <option value="newest">Nieuwste</option>
+        </select>
       </div>
       <div class="field">
-        <label>Weergave</label>
-        <div class="segmented-control" id="musicianViewToggle">
-          <div class="segmented-btn selected" data-view="list" onclick="setMusicianViewMode('list')">Lijst</div>
-          <div class="segmented-btn" data-view="grid" onclick="setMusicianViewMode('grid')">Kaarten</div>
-        </div>
+        <label for="musicianViewToggle">Weergave</label>
+        <select id="musicianViewToggle" onchange="setMusicianViewMode(this.value)">
+          <option value="list">Lijst</option>
+          <option value="grid">Kaarten</option>
+        </select>
       </div>
     </div>
 
@@ -1595,6 +1596,16 @@
     <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
 
+      <!-- TT-232 (09-09-2026): stond eerder achter het ⋯-menu op het
+           zoekscherm als "Zoekvoorkeuren". De inhoud gaat over e-mail, niet
+           over zoeken, dus hoort het hier. -->
+      <div class="tile" onclick="openSearchPrefsModal()">
+        <div style="flex:1;">
+          <div class="tile-title">E-mailvoorkeuren</div>
+          <div class="tile-sub">hoe vaak je bericht krijgt over nieuwe matches</div>
+        </div>
+      </div>
+
       <div class="tile" onclick="openDeleteAccountModal()">
         <div style="flex:1;">
           <div class="tile-title">Account verwijderen</div>
@@ -1725,25 +1736,15 @@
   </div>
 </div>
 
-<!-- Zoekvoorkeuren (TT-01, 28-08-2026): instrumenten die je zoekt in een
-     ander + e-maildigestvoorkeur. Beïnvloedt alleen de achtergronddigest,
-     nooit de live zoekresultaten — vandaar de toelichting bovenaan. -->
+<!-- E-mailvoorkeuren (TT-01, 28-08-2026; verplaatst en ingekort in TT-232,
+     09-09-2026). Raakt alleen de e-mail op de achtergrond, nooit de live
+     zoekresultaten. Het veld "instrumenten die je zoekt in een ander" is
+     eruit (Ronald, 09-09-2026): dat staat al in de zoekfilters. -->
 <div class="modal-overlay" id="searchPrefsModal" onclick="if(event.target===this)closeSearchPrefsModal()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeSearchPrefsModal()">✕</button>
-    <div class="filter-title" style="margin-bottom:4px;">Zoekvoorkeuren</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Voor de e-maildigest hieronder — je live zoekresultaten veranderen hier niet door.</p>
-
-    <div class="filter-row single" style="margin-bottom:20px;">
-      <div class="field">
-        <label>Instrumenten die je zoekt in een ander</label>
-        <div class="picker-field" id="wantedInstrumentsField">
-          <span class="picker-field-label" id="wantedInstrumentsFieldLabel">Instrument kiezen…</span>
-          <span class="picker-field-chevron">▾</span>
-        </div>
-        <div class="picker-badge-row" id="wantedInstrumentsBadgeRow"></div>
-      </div>
-    </div>
+    <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Deze instellingen gelden alleen voor e-mail. Je zoekresultaten veranderen hier niet door.</p>
 
     <div class="field" style="margin-bottom:20px;">
       <label>Nieuwe-matches e-mail</label>
