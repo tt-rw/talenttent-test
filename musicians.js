@@ -551,8 +551,12 @@ async function deleteAllStorageForUser(userId) {
 const TILES = [
   { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - plaats - bio' },
   { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers' },
-  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie' },
+  // TT-227 (09-09-2026, Ronald): "Je setlist" hoort direct onder "Wat speel
+  // je" — dat zijn allebei vragen over wat je zelf speelt. "Wat zoek je"
+  // schuift een plek naar beneden. Deze volgorde stuurt het tegeloverzicht
+  // volledig aan (renderTegels() leest deze lijst), dus dit is de enige plek.
   { id: 'jeSetlist',  title: 'Je setlist',      sub: 'covers - eigen nummers' },
+  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie' },
   { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto" },
 ];
 
@@ -1203,11 +1207,40 @@ function jstSetLevel(i, level) {
   jstSongs[i].level = level;
   jstRenderSongs();
 }
+// TT-226 (09-09-2026, Ronald): een aangezette "Zeker?" was niet meer te
+// annuleren. Wie zich bedacht, moest het hele tegelscherm verlaten en
+// opnieuw openen. Een klik ergens anders in de app zet de knop nu terug op
+// ✕. Zelfde patroon als handleCancelClick() hierboven: de listener wordt
+// pas ná de huidige klik geregistreerd, en verdwijnt vanzelf ({ once: true }).
+function jstCancelConfirmDelete() {
+  let gewijzigd = false;
+  jstSongs.forEach(s => { if (s._confirmDelete) { delete s._confirmDelete; gewijzigd = true; } });
+  if (gewijzigd) jstRenderSongs();
+}
+
+function jstArmOutsideCancel() {
+  // Pas ná deze klik toevoegen — anders vangt de listener de huidige, nog
+  // bubbelende klik meteen weer af en staat "Zeker?" er nooit.
+  setTimeout(() => {
+    document.addEventListener('click', function onOutsideClick(e) {
+      // Een klik op een verwijderknop loopt via jstRemoveSong() zelf: die
+      // bevestigt deze regel, of zet een andere regel aan. Hier niets doen,
+      // anders draait deze listener die actie meteen weer terug.
+      if (e.target.closest && e.target.closest('.song-remove')) return;
+      jstCancelConfirmDelete();
+    }, { once: true });
+  }, 0);
+}
+
 function jstRemoveSong(i) {
   if (!jstSongs[i]) return;
   if (!jstSongs[i]._confirmDelete) {
+    // TT-226: maximaal één regel tegelijk op "Zeker?" — een eerder
+    // aangezette regel mag niet onopgemerkt open blijven staan.
+    jstSongs.forEach(s => delete s._confirmDelete);
     jstSongs[i]._confirmDelete = true;
     jstRenderSongs();
+    jstArmOutsideCancel();
     return;
   }
   jstSongs.splice(i, 1);
