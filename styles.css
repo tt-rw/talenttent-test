@@ -2647,51 +2647,95 @@
 
 
   /* ─── Draaiwiel (TT-232, 09-09-2026) ──────────────────────────────────────
-     Huisstijlcomponent voor getalvelden: leeftijd, niveau, straal. Vaste
-     stappen, drie waarden zichtbaar, de middelste is gekozen. De hoogte van
-     .wheel-item (30px) staat ook in utils.js als WHEEL_ITEM_H — die twee
-     moeten gelijk blijven, anders leest het wiel de verkeerde waarde af. */
-  .wheel {
+     De vorm die iedereen van zijn telefoon kent: één paneel per groep, de
+     waarden vervagen naar boven en onder, en één rustige balk markeert de
+     gekozen regel. Vijf regels zichtbaar, de middelste is gekozen.
+     Regelhoogte 32px staat ook in utils.js als WHEEL_ITEM_H — die twee moeten
+     gelijk blijven, anders leest het wiel de verkeerde waarde af. */
+  .picker-group {
     position: relative;
-    width: 68px;
-    height: 90px;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    height: 160px;              /* 5 regels van 32px */
+    padding: 0 8px;
     background: var(--surface2);
     border: var(--line) solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
   }
-  .wheel:focus { outline: none; border-color: var(--accent); }
+  .picker-group:focus-within { border-color: var(--accent); }
+  /* De markering van de gekozen regel: één balk over de hele groep, geen
+     lijnen per wiel. Scrollt niet mee. */
+  .picker-band {
+    position: absolute;
+    left: 6px; right: 6px;
+    top: 64px;                  /* 2 regels van 32px */
+    height: 32px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  .wheel { position: relative; height: 100%; width: 56px; }
+  .wheel:focus { outline: none; }
   .wheel-scroll {
     height: 100%;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    /* Vervagen naar boven en onder — het kenmerk van dit soort wiel. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
   }
   .wheel-scroll::-webkit-scrollbar { display: none; }
-  /* Eén lege regel boven en onder, zodat de eerste en de laatste waarde ook
-     in het midden kunnen staan. */
-  .wheel-pad { height: 30px; }
+  /* Twee lege regels boven en onder, zodat ook de eerste en de laatste
+     waarde in het midden kunnen staan. */
+  .wheel-pad { height: 64px; }
   .wheel-item {
-    height: 30px;
-    line-height: 30px;
+    height: 32px;
+    line-height: 32px;
     text-align: center;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
     color: var(--muted);
     scroll-snap-align: center;
     cursor: pointer;
     user-select: none;
+    transition: color 0.15s;
   }
-  .wheel-item.selected { color: var(--text); font-weight: 700; font-size: var(--fs-md); }
-  /* De markering van de gekozen regel. Scrollt niet mee. */
-  .wheel-band {
-    position: absolute;
-    left: 0; right: 0; top: 30px;
-    height: 30px;
-    border-top: var(--line) solid var(--accent);
-    border-bottom: var(--line) solid var(--accent);
-    pointer-events: none;
+  .wheel-item.selected { color: var(--text); font-weight: 700; }
+  /* "t/m" staat op de hoogte van de gekozen regel, niet in het midden van
+     het paneel — anders lijkt het los te zweven. */
+  .wheel-sep {
+    align-self: flex-start;
+    margin-top: 64px;
+    height: 32px;
+    line-height: 32px;
+    color: var(--muted);
+    font-size: var(--fs-sm);
   }
+  .wheel-pair { display: flex; align-items: center; gap: 8px; }
+  .label-with-info { display: flex; align-items: center; gap: 8px; }
+  .wheel-hint {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    margin: 8px 0 16px;
+    min-height: 16px;
+  }
+
+  /* Leeftijd en Niveau staan op één regel: twee pickers naast elkaar. */
+  .wheel-filter-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .wheel-filter-row .field { min-width: 0; }
+  @media (max-width: 560px) {
+    .wheel-filter-row { gap: 12px; }
+    .wheel-filter-row .wheel { width: 46px; }
+    .picker-group { padding: 0 6px; }
+  }
+
   /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
      In een knoppenrij maakt die marge de twee knoppen 8px ongelijk hoog —
      precies het verschil dat TT-228 wegnam. Hier dus terugzetten op 0. */

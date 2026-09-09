@@ -651,7 +651,8 @@ function removeSong(i) {
 // Het wiel schrijft zijn waarde altijd naar een verborgen invoerveld
 // (cfg.inputId). Alle bestaande code die die waarde uitleest, blijft daardoor
 // ongewijzigd werken.
-const WHEEL_ITEM_H = 30;   // moet gelijk zijn aan .wheel-item in styles.css
+const WHEEL_ITEM_H = 32;   // moet gelijk zijn aan .wheel-item in styles.css
+const WHEEL_ZICHTBAAR = 5; // aantal zichtbare regels; .wheel-pad = 2 regels
 const WHEELS = {};
 
 // cfg: { id, inputId, values[], value, onChange, ariaLabel, labels? }
@@ -665,13 +666,15 @@ function initWheel(cfg) {
   el.setAttribute('tabindex', '0');
   el.setAttribute('role', 'listbox');
   if (cfg.ariaLabel) el.setAttribute('aria-label', cfg.ariaLabel);
+  // Geen eigen rand en geen eigen markeringsbalk: die horen bij de groep
+  // (.picker-group) eromheen, zodat vier wielen samen één picker vormen —
+  // het patroon dat iedereen van zijn telefoon kent.
   el.innerHTML = `
     <div class="wheel-scroll">
       <div class="wheel-pad"></div>
       ${cfg.values.map((v, i) => `<div class="wheel-item" role="option" data-i="${i}">${escHtml(labelOf(v))}</div>`).join('')}
       <div class="wheel-pad"></div>
-    </div>
-    <div class="wheel-band" aria-hidden="true"></div>`;
+    </div>`;
 
   const scroll = el.querySelector('.wheel-scroll');
   const state = { el, scroll, cfg, values: cfg.values.slice(), index: 0, timer: null };
@@ -723,7 +726,10 @@ function setWheelIndex(id, i, notify) {
   i = Math.max(0, Math.min(s.values.length - 1, i));
   const changed = i !== s.index;
   s.index = i;
-  s.scroll.scrollTop = i * WHEEL_ITEM_H;
+  // Vloeiend draaien bij een klik of een pijltoets, direct bij het opbouwen.
+  const top = i * WHEEL_ITEM_H;
+  if (notify && typeof s.scroll.scrollTo === 'function') s.scroll.scrollTo({ top, behavior: 'smooth' });
+  else s.scroll.scrollTop = top;
   s.el.querySelectorAll('.wheel-item').forEach((item, n) => {
     const on = n === i;
     item.classList.toggle('selected', on);

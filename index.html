@@ -919,7 +919,10 @@
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
             <div class="wheel-pair">
-              <div id="wheelRadius"></div>
+              <div class="picker-group">
+                <div id="wheelRadius"></div>
+                <div class="picker-band" aria-hidden="true"></div>
+              </div>
               <span class="wheel-sep">km</span>
             </div>
             <input type="hidden" id="filterRadius" value="5">
@@ -936,10 +939,11 @@
       <div class="wheel-filter-row">
         <div class="field">
           <label>Leeftijd</label>
-          <div class="wheel-pair">
+          <div class="picker-group">
             <div id="wheelAgeMin"></div>
             <span class="wheel-sep">t/m</span>
             <div id="wheelAgeMax"></div>
+            <div class="picker-band" aria-hidden="true"></div>
           </div>
           <input type="hidden" id="filterAgeMin">
           <input type="hidden" id="filterAgeMax">
@@ -952,10 +956,11 @@
             <span>Niveau</span>
             <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" aria-label="Wat betekenen de niveaus 1 tot en met 5?" title="Toelichting op niveau">i</button>
           </label>
-          <div class="wheel-pair">
+          <div class="picker-group">
             <div id="wheelNiveauMin"></div>
             <span class="wheel-sep">t/m</span>
             <div id="wheelNiveauMax"></div>
+            <div class="picker-band" aria-hidden="true"></div>
           </div>
           <input type="hidden" id="filterNiveauMin">
           <input type="hidden" id="filterNiveauMax">
