@@ -598,6 +598,7 @@ async function runSearch() {
     renderCappedMusicianResults();
 
   } catch(e) {
+    logCaught('runSearch', e);
     if (seq !== musicianSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
@@ -984,6 +985,7 @@ async function runBandSearch() {
     lastBandResults = filtered;
     renderCappedBandResults();
   } catch(e) {
+    logCaught('runBandSearch', e);
     if (seq !== bandSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
@@ -1159,6 +1161,7 @@ async function onSetlistArtistSearch(q) {
       itunesArtistCache.set(cacheKey, artists);
       renderArtistResults(ac, artists, q, 'selectSetlistArtist');
     } catch(e) {
+      logCaught('onSetlistArtistSearch', e);
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
     }
   }, 400);
@@ -1190,6 +1193,7 @@ async function onSetlistTrackSearch(q) {
     const songs = await fetchArtistSongs(selectedSetlistArtist.id);
     renderTrackResults(ac, songs, q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
   } catch(e) {
+    logCaught('onSetlistTrackSearch', e);
     ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
   }
 }
@@ -1347,6 +1351,7 @@ async function runSetlistSearch() {
     renderSetlistResults(filtered.slice(0, SEARCH_RESULT_LIMIT), { total: filtered.length });
 
   } catch(e) {
+    logCaught('runSetlistSearch', e);
     if (seq !== setlistSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }

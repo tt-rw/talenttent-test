@@ -1,6 +1,504 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-09-2026 — **TT-224/TT-225 hersteld** (waren verdwenen bij de bestandsopsplitsing), plus TT-226, TT-227 en TT-228. Sessieplanning TT-01 (e-maildigest, diagnose) staat nog steeds als eerstvolgend ticket. Laatst opgeleverde ticket: TT-228.
+**Laatste update:** 10-09-2026 — **TT-232 en TT-233 overgezet van de testrepo naar productie.** Het zoekscherm voor muzikanten werkt nu met draaiwielen en keuzelijsten. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-235 (zes element-id's die niet bestaan), P2. **Werkwijze gewijzigd: één set bestanden gaat voortaan naar beide repo's — zie het blok hieronder.**
+
+**Let op — ticketnummer TT-232 was twee keer gebruikt.** De testrepo gebruikte TT-232 voor de zoekschermherziening. De actielijst gebruikte hetzelfde nummer voor "e-mail bij een fout". Opgelost op 10-09-2026: de zoekschermherziening houdt TT-232, want dat nummer staat in de code. Het e-mailticket heet vanaf nu **TT-234**. Dat ticket was nog niet gebouwd, dus buiten deze regel bestaat er geen verwijzing naar.
+
+Vorige update, 09-09-2026: TT-230 opgelost. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de blokken hieronder).
+
+---
+
+**Werkwijzewijziging (10-09-2026, besluit Ronald) — één set bestanden, twee repo's gelijk.**
+
+**Wat er misging.** De testrepo en de productierepo waren twaalf bestanden uit
+elkaar gelopen. TT-230 is rechtstreeks in de productierepo gebouwd. TT-232 en
+TT-233 zijn in de testrepo gebouwd, op een kopie van vóór TT-230. Twee
+schrijfplekken geven altijd twee versies. Een kopie van alle bestanden in één
+richting had TT-230 gewist.
+
+**De nieuwe regel.** Claude levert per sessie **één set bestanden**. Ronald
+zet diezelfde set in **beide** repo's, in dezelfde sessie. Er komt nooit een
+wijziging in maar één van de twee. Ook geen tikfout, ook geen snelle fix.
+
+**Vaste stap bij sessiestart.** Claude kloont beide repo's en vergelijkt ze
+bestand voor bestand. Wijken ze af, dan meldt Claude dat vóór het ticket
+begint. Commando:
+
+```
+for f in $(ls prod); do cmp -s "prod/$f" "test/$f" || echo "verschilt: $f"; done
+```
+
+**Gelijkgetrokken op 10-09-2026.** Twaalf bestanden in beide repo's gezet:
+`actielijst.md`, `index.html`, `styles.css`, `core.js`, `utils.js`,
+`search.js`, `auth.js`, `bands.js`, `messages.js`, `musicians.js`,
+`postcode.js`, `wizard.js`. Alle overige bestanden waren al gelijk.
+
+**Ontwerpdocumenten horen in het claude.ai-project, niet in een repo.**
+Geverifieerd op 10-09-2026: `huisstijl-en-consistentie.md` staat in de
+testrepo en in het project, en die twee verschillen. De projectversie is
+nieuwer. Drie stukken staan alleen daar: "Witruimte rond een blok dat boven de
+pagina-inhoud staat", "Inspringing van tekst in een formulier
+(`--field-inset`)" en "Een bovengrens zonder ondergrens bestaat niet". Dit is
+dezelfde fout als bij `zoekfunctienaslagwerk.md`, dat ook op twee plekken
+staat.
+
+**Besluit:** de projectversie is leidend. **Ronald verwijdert
+`huisstijl-en-consistentie.md` uit de testrepo.** Het bestand komt niet in de
+productierepo. Datzelfde geldt voor `zoekfunctienaslagwerk.md`: dat openstaande
+conflict is hiermee op dezelfde manier op te lossen — projectversie leidend,
+repokopie weg.
+
+**Twee mappen die niet in de set zitten:**
+
+| Map | Waar | Wat ermee |
+|---|---|---|
+| `.github/workflows/static.yml` | alleen productie | **Blijft zo. Bewuste uitzondering.** Alleen de productierepo publiceert naar GitHub Pages. Deze map hoort nooit in de testrepo, en een sessie die dit verschil ziet moet het laten staan |
+| `Claude outputs` | alleen test | Schermafdrukken uit een testsessie. Hoort in geen van beide repo's: GitHub Pages serveert alles in de productierepo publiek. **Ronald verwijdert deze map uit de testrepo** |
+
+**Geverifieerd, 10-09-2026:** na het plaatsen van de dertien bestanden in beide
+repo's is `diff -rq` tussen de twee volledige mappen leeg, op die twee mappen
+na.
+
+**Nog te doen door Ronald:** deze regel opnemen in de projectinstructies,
+onder "Werkwijze per sessie".
+
+---
+
+**TT-232 (OPGELOST, overgezet naar productie 10-09-2026) — Zoekscherm muzikanten herzien.**
+
+Gebouwd en getest in de testrepo op 09-09-2026. Op 10-09-2026 overgezet naar
+`talenttent.org`.
+
+**Wat er verandert:**
+
+- Straal, leeftijd en niveau zijn draaiwielen geworden. Elk veld opent een
+  bladwijzer met het wiel erin. Het wiel schrijft naar dezelfde verborgen
+  invoervelden die `runSearch()` al uitlas. De filterlogica is niet gewijzigd.
+- Vaste stappen op de wielen. Leeg betekent: filter staat uit ("Geen" bovenaan).
+  Leeftijd loopt per 3 jaar tot 24, daarna per 5. Bij tieners telt één jaar
+  verschil zwaar. Bij volwassenen niet meer.
+- De weergavekeuze bij Muzikanten is een keuzelijst geworden. Bij Bands staat
+  nog de schakelbalk.
+- **De matchscore komt niet meer uit de database** (besluit Ronald). Hij telt
+  uitsluitend wat je zelf hebt ingevuld: 3 punten per gekozen instrument dat
+  deze muzikant speelt, 2 punten per gekozen genre. Instrument weegt zwaarder
+  dan genre: je zoekt een bassist, geen genre. Straal telt niet mee — die is al
+  een harde grens.
+- Bij "Beste match" beslist eerst de afstand, afgerond op hele kilometers,
+  daarna het aantal punten. Zonder die afronding geeft "Beste match" dezelfde
+  lijst als "Dichtstbijzijnde".
+- Het zoekscherm werkt uitgelogd nu precies hetzelfde als ingelogd. De punten
+  komen immers uit de filters, niet uit je eigen profiel.
+- Het ⋯-menu op de zoekpagina is weg. `toggleSearchPrefsMenu()` en
+  `closeSearchPrefsMenu()` zijn verwijderd. De e-mailvoorkeuren staan nu onder
+  **Instellingen → E-mailvoorkeuren**.
+- `musician_wanted` wordt daar niet meer gelezen of geschreven. De bestaande
+  rijen blijven staan. Alleen dit scherm raakt ze niet meer aan.
+
+**Bewust vervallen: het filter "Doel".** Het blok Doel en de variabele
+`filterGoal` staan niet meer in het zoekscherm. Bevestigd door Ronald op
+10-09-2026. `GOAL_LABELS` blijft bestaan: `bands.js` toont het doel nog op een
+profiel.
+
+---
+
+**TT-233 (OPGELOST, overgezet naar productie 10-09-2026) — Witruimte, labelhoogte en keuzemenu's.**
+
+Gebouwd en getest in de testrepo op 10-09-2026. Zelfde oplevering als TT-232.
+
+**Witruimte in een formulier — één maat per soort:**
+
+- Label → veld: **8px**, overal. Komt uit `.field { gap: 8px }`. Een blok dat
+  geen `.field` is, krijgt die 8px expliciet.
+- Label → hulptekst → veld: ook **8px** per stap.
+- Tussen twee blokken: **20px**.
+- **Elk label is even hoog: `line-height: 16px`.** Een label met een i-knop erin
+  is dat ook. Die knop is binnen een label **16×16px**, niet de 24px die hij
+  daarbuiten heeft. Het tikvlak blijft 44×44px via het `::after`-patroon.
+  Zonder deze regel maakt de knop dat ene label hoger. Dan staat het veld
+  eronder lager dan het veld ernaast.
+- Nooit een inline `style="margin-bottom:..."` op een veld of label.
+
+**Een keuzemenu klapt uit onder de knop waar het bij hoort** (Ronald,
+10-09-2026), niet in een laag onder aan het scherm. Daar heeft de gebruiker net
+getikt en daar staan zijn ogen. Vorm: `.choice-menu` binnen een `.menu-anchor`,
+even breed als de knop, 6px eronder, `--radius-field`, `--surface` met een rand
+en een schaduw, rijen van 44px met de gekozen rij in `--accent` en een `✓`. De
+beweging begint aan de bovenkant van het menu (160 ms open, 140 ms dicht). Het
+`<select>` blijft verborgen in de HTML staan als bron van waarheid, zodat
+bestaande code die `.value` leest of zet ongewijzigd blijft werken.
+
+**Straal terug van 28 naar 10 standen.** 28 standen tot 500 km vroegen een
+lange scrollbeweging voor een keuze die in de praktijk tussen 10 en 50 km ligt.
+Nederland is ongeveer 300 km lang. Beginstand van het straalwiel: 5 km.
+
+---
+
+**Overzetting testrepo → productie, 10-09-2026 — hoe het is gegaan.**
+
+De twee repo's waren twee kanten op gelopen. De testrepo had TT-232 en TT-233.
+De productierepo had TT-230, dat de testrepo miste. Een kopie van alle
+bestanden zou TT-230 hebben gewist.
+
+**Overgezet: vijf bestanden.** `index.html`, `styles.css`, `core.js`,
+`utils.js`, `search.js`.
+
+**Niet overgezet: zes bestanden.** `auth.js`, `bands.js`, `messages.js`,
+`musicians.js`, `postcode.js`, `wizard.js`. De volledige diff van die zes is
+gelezen. Elk verschil was TT-230. Ze bevatten geen enkele wijziging uit de
+testrepo.
+
+**TT-230 teruggezet in drie van de vijf.** `core.js` kreeg `logCaught()` terug,
+plus de aanroepen in `appInit()`, `openSearchPrefsModal()` en
+`saveSearchPrefs()`. `utils.js` kreeg er twee terug, `search.js` vijf.
+
+**Gecontroleerd vóór oplevering (Geverifieerd):**
+
+| Controle | Uitkomst |
+|---|---|
+| `node --check` op alle tien geladen JS-bestanden | schoon |
+| alle 59 `logCaught`-aanroepen uit productie aanwezig | gesorteerde namenlijst identiek |
+| 128 inline `on*`-handlers wijzen naar een bestaande functie | alle 128 gevonden |
+| alle veertien views openen | 14/14 |
+| straalwiel openen en een waarde kiezen | 10 standen, 5 → 50 km |
+| zelfde testset tegen de testrepo én tegen het resultaat | elke regel gelijk, behalve `logCaught` (alleen in het resultaat) |
+| onafgevangen fouten en console-fouten | 0 en 0 |
+
+**Fout die hierbij is gemaakt en hersteld.** De eerste ronde zette `logCaught`
+op zeven plekken terug. Productie had er negen. De twee gemiste zaten in
+`openSearchPrefsModal()` en `saveSearchPrefs()`. Een telling van beide
+namenlijsten ving dat, niet het oog. Les: tel de aanroepen, lees ze niet.
+
+---
+
+**TT-235 (nieuw, NIET opgelost, P2, 10-09-2026) — Zes element-id's die niet bestaan.**
+
+**Wat het is.** Elk vak, elke knop en elk veld op het scherm heeft een naam in
+`index.html`, het `id`. JavaScript zoekt een onderdeel op met
+`document.getElementById('<naam>')`. Bestaat die naam niet, dan komt er niets
+terug en doet de regel erna niets. Er verschijnt geen foutmelding. Het
+onderdeel werkt gewoon niet.
+
+**Zes namen worden opgevraagd en bestaan niet:**
+
+| Naam | Wordt gezocht in |
+|---|---|
+| `profileMoreBtn` | `core.js` |
+| `profileMoreDropdown` | `core.js` |
+| `bandInviteToggleBtn` | `wizard.js` |
+| `magOokLaterMedia` | `wizard.js` |
+| `magOokLaterRepertoire` | `wizard.js` |
+| `magOokLaterWatZoekJe` | `wizard.js` |
+
+**Geverifieerd:** deze zes staan zo in productie én in de testrepo. Ze zijn
+niet door de overzetting van 10-09-2026 ontstaan.
+
+**Onbekend:** of hierdoor iets zichtbaar stuk is. Waarschijnlijk gaat het om
+onderdelen die bij een eerdere herziening zijn hernoemd of verwijderd, waarna
+de JS-regel is blijven staan. Eerst uitzoeken per naam. Daarna pas opruimen.
+
+**Waarom dit wacht.** Het is geen P0. Doe dit na TT-229 en TT-231.
+
+---
+
+**TT-234 (nieuw, NIET opgelost, P1, 09-09-2026) — E-mail bij een fout in `app_error_log`.**
+
+*Heette tot 10-09-2026 TT-232. Hernummerd omdat de testrepo dat nummer al voor de zoekschermherziening gebruikte. Zie de kop van dit bestand.*
+
+**Wat Ronald vroeg:** "ik wil een email ontvangen zodra dit gebeurt."
+
+**Waarom nu pas.** TT-230 zorgt dat elke fout wordt vastgelegd. Vastleggen is
+niet melden — vandaag moet Ronald zelf in de tabel kijken. Dit ticket sluit
+dat gat.
+
+**Wat er nu is (Geverifieerd):** `logCaught()` en `logAppError()` schrijven
+naar `app_error_log`. Kolommen: `message`, `source`, `stack`, `user_id`.
+Maximaal 20 rijen per paginabezoek. Geen dashboard, geen filtering, geen
+melding.
+
+**Drie routes, nog geen keuze gemaakt:**
+
+| Route | Wat het is | Openstaand |
+|---|---|---|
+| Database-webhook naar een maildienst | Supabase stuurt bij elke nieuwe rij een bericht door | **Onbekend:** of webhooks in dit Supabase-plan zitten. Vraagt een externe maildienst (Resend, Postmark o.i.d.) en een account |
+| Foutenoverzicht in de app | Een scherm dat alleen Ronald ziet. Stond al als P1 in TT-64 | Geen melding, wel direct inzicht. Geen externe dienst nodig |
+| Wekelijkse samenvatting per mail | Eén mail per week i.p.v. per fout | Vraagt een geplande taak. Dit project heeft geen cron beschikbaar — zelfde beperking als bij `tt_expire_old_founder_offers`, die daarom "lazy" meedraait |
+
+**Openstaand punt vóór het bouwen.** Ronald wil een mail bij elke fout. Het
+risico daarvan is bekend uit TT-64: één fout in een lus levert 20 rijen per
+paginabezoek. Dat wordt 20 mails. Nodig vóór de bouw:
+1. ontdubbelen op `message` + `source`, of
+2. een drempel (maximaal één mail per fouttekst per uur), of
+3. eerst een week meten hoeveel er werkelijk binnenkomt.
+
+Besluit hierover nemen aan het begin van die sessie, niet tijdens het bouwen.
+
+**Nodig van Ronald (Claude heeft geen databasetoegang):**
+1. Staat "Database Webhooks" in het Supabase-menu van dit project?
+2. Welk e-mailadres moet de melding ontvangen?
+3. Is er al een maildienst in gebruik, of moet die nieuw worden aangemaakt?
+
+**Volgorde:** na TT-229 en TT-231. Een melding over een app die nog stuk is,
+voegt niets toe aan wat al bekend is.
+
+---
+
+**TT-231 (nieuw, NIET opgelost, P0, 09-09-2026) — Vaste Playwright-testset wordt leidend.**
+
+**Wat Ronald vroeg:** "ik wil dat de playwright test leidend wordt. ik kan
+dingen vergeten." De handmatige smoke-test vervalt daarmee als Ronalds taak.
+
+**Geverifieerd — de grens van wat automatisch kan.** Vanaf Ronalds laptop is
+er geen netwerktoegang: `https://fqtgilwfestzofunupnu.supabase.co` en
+`https://talenttent.org` geven allebei geen antwoord (curl-code 000). In de
+sessie-sandbox is Supabase ook niet bereikbaar. Een geautomatiseerde test
+tegen de echte database kan dus op geen van beide plekken draaien.
+
+**Opzet in twee lagen. Samen zijn ze leidend.**
+
+*Laag 1 — Playwright met de Supabase-stub, in de sessie.* Volledig
+automatisch, draait bij elke wijziging vóór oplevering. Dekt:
+- alle views openen zonder paginafout;
+- alle functies uit "Functies die aanwezig moeten zijn" bestaan;
+- de verplichte-featurelijst uit de projectinstructies als echte controles,
+  niet als een lijstje dat Claude met de hand naloopt;
+- knoppenrijen (TT-228): volgorde, gelijke breedte, 44px tikdoel;
+- navigatie, hamburgermenu, onderbalk, modals binnen het canvas (TT-224);
+- haakjesbalans en `node --check` op elk gewijzigd JS-bestand.
+
+*Laag 2 — Claude loopt de app door in Ronalds browser, op de echte site.*
+Dekt wat laag 1 niet kan: database, RLS-regels, echt inloggen. Claude voert
+de stappen uit; Ronald hoeft niets te onthouden of af te vinken. Ronald heeft
+alleen zijn browser open en geeft één keer toestemming.
+
+**De stappen van laag 2** (de oude smoke-test, uitgebreid met de bandomgeving
+— die ontbrak, en dat verklaart waarom TT-229 pas laat opviel):
+inloggen · zoeken met profiel · zoeken zonder profiel · uitgelogd zoeken ·
+bericht sturen · profiel bewerken · **een band openen** · **Bandleden beheren
+openen** · **een uitnodiging versturen of intrekken**.
+
+**Waar de testset komt te staan:** in de repo, in een eigen map, zodat Claude
+hem bij elke sessie meekloont en hij versiebeheer heeft. Niet als wegwerptest
+per sessie — dan valt er niets mee te vergelijken.
+
+**Volgorde:** TT-230 eerst. Een test kan niets vinden zolang fouten stil
+worden opgeslokt.
+
+---
+
+**TT-230 (OPGELOST, 09-09-2026) — Stil falen weghalen, app-breed.**
+
+**Aanleiding:** drie functies in `bands.js` vangen élke databasefout af en
+tonen niets — geen melding, geen console-fout, een leeg vak. Zo'n storing kan
+weken bestaan tot Ronald hem toevallig ziet. Dat is vermoedelijk precies wat
+er bij TT-229 gebeurt.
+
+**Wat gebouwd is.** Eén nieuwe functie in `core.js`, direct naast
+`logAppError()`:
+
+```js
+function logCaught(source, e) { ... }   // console.error + logAppError
+```
+
+Elk `catch`-blok dat een fout opslokte roept nu `logCaught('<functienaam>', e)`
+aan. Dat zijn **57 `catch`-blokken in negen bestanden**, plus twee foutpaden
+buiten een `catch` (zie de tabel hieronder) — 59 aanroepen in totaal. De
+aanroepende functie bepaalt
+zelf of de gebruiker daarnaast nog iets ziet; bestaande toasts en inline
+meldingen zijn ongewijzigd gebleven.
+
+**Drie fouten die hierbij aan het licht kwamen — geen enkele zat in een
+`catch`-blok:**
+
+| Plek | Wat er misging |
+|---|---|
+| `loadBandInvites()` | `if (error \|\| !data \|\| !data.length) return;` — Supabase gooit niets, een mislukte vraag komt terug als `error` naast lege data. Een fout viel dus samen met "geen uitnodigingen". Nu gesplitst: `error` wordt gelogd, leeg blijft leeg |
+| `loadFounderOffers()` | identiek, zelfde splitsing |
+| `respondToFounderOffer()`, tak "weigeren" | het resultaat van de `update` werd niet gelezen. Mislukte de schrijfactie, dan zag de gebruiker tóch "Aanbod geweigerd" en bleef het aanbod staan. Nu `if (error) throw error` |
+
+**Eén zichtbare melding toegevoegd.** `renderFounderTransferSection()` liet bij
+een fout de hele sectie verdwijnen — de beheerder zag geen knop "Beheer
+overdragen" en geen reden. Nu staat er: *"Beheer overdragen is nu niet
+beschikbaar. Probeer het later opnieuw."* De banners van `loadBandInvites()` en
+`loadFounderOffers()` krijgen bewust géén melding: die verschijnen alleen als er
+iets openstaat, dus een gebruiker kan niet weten dat hij iets mist. Daar is de
+logregel het signaal.
+
+**Bewust géén `logCaught` in:** opslag-vangnetten
+(`localStorage`/`sessionStorage`), `JSON.parse`, `new URL`, de History API,
+`logAppError()` zelf, de eigen annulering bij delen, en de PDOK-tijdslimiet die
+terugvalt op de cache. Die vangen een browserbeperking af, hebben een werkende
+terugval, en zouden de teller van 20 vullen met ruis.
+
+**Bewust buiten dit ticket gehouden:** `catch`-blokken die de gebruiker al een
+toast of inline foutmelding tonen, maar niets vastleggen. Dat is geen stil
+falen. Wel een kandidaat voor een eigen ticket als `app_error_log` te dun
+blijkt.
+
+**Getest, geverifieerd (Playwright, sessiestub voor Supabase):**
+
+| Controle | Uitkomst |
+|---|---|
+| `node --check` op tien JS-bestanden | alle tien goed |
+| Haakjesbalans `{}` `()` `[]` | gelijk in negen gewijzigde bestanden |
+| Veertien views openen | geen paginafouten |
+| 37 verplichte functies aanwezig | geen ontbrekend |
+| TT-229 nagebootst (`band_members` geeft "column founder_offer does not exist") | drie console-regels, drie rijen naar `app_error_log` (`loadFounderOffers`, `loadBandInvites`, `renderFounderTransferSection`), plus de melding in de Beheer-sectie |
+| Zelfde scherm zonder fout | nul console-regels, nul logregels |
+
+**Gewijzigde bestanden (9):** `core.js` · `utils.js` · `auth.js` ·
+`postcode.js` · `wizard.js` · `search.js` · `musicians.js` · `bands.js` ·
+`messages.js`. `index.html`, `styles.css` en `modals-shared.js` ongewijzigd.
+
+**Ontwerptoets:** gedaan tegen `app-first-toetslijst.md` en
+`huisstijl-en-consistentie.md`. Eén nieuw zichtbaar element (de regel in de
+Beheer-sectie). Punt 9 (één design system): opmaak overgenomen van de
+bestaande foutregel in `loadCurrentMembersForModal()` —
+`font-size:13px; color:var(--danger)`. Geen nieuwe kleur, geen nieuwe klasse,
+geen emoji. §13 van de huisstijl stelt vast dat er nog geen
+bannercomponent bestaat; dit voegt er geen nieuwe uit.
+
+**Wat dit betekent voor TT-229.** De oorzaak is nu vindbaar zonder gokwerk.
+Ronald opent de bandomgeving, drukt F12 en leest de console — of kijkt in
+`app_error_log`. De echte foutmelding staat er nu.
+
+---
+
+**TT-229 (nieuw, NIET opgelost, P0, 09-09-2026) — Bandomgeving werkt niet meer.**
+
+**Wat Ronald meldde:** eerst "beheer overdragen functioneert niet meer",
+daarna "de bandomgeving is helemaal stuk". Besluit: eigen sessie, dit is het
+eerstvolgende onderwerp.
+
+**Geverifieerd — de knopvolgorde-wijziging van TT-228 is niet de oorzaak.**
+In TT-228 zijn de knoppen in `confirmModal` omgedraaid. Dat was een reëel
+risico. `showConfirm()` in `utils.js` zoekt de knop echter op via
+`getElementById('confirmYesBtn')`, niet op positie. De volgorde raakt dat
+dus niet.
+
+**Geverifieerd — de bedrading is compleet.** Alle betrokken functies bestaan
+en staan in `bands.js`: `askFounderTransfer`, `sendFounderOffer`,
+`withdrawFounderOffer`, `renderFounderTransferSection`,
+`respondToFounderOffer`, `loadFounderOffers`, `dissolveBand`. De elementen
+`#founderTransferSection`, `#founderOfferBanner` en `#bandInvitesBanner`
+staan in `index.html`. `openAddMemberModal()` roept
+`renderFounderTransferSection()` aan. Geen dubbele functienamen tussen de
+tien JS-bestanden. De opsplitsing van 08-09-2026 heeft de inhoud van
+`bands.js` niet gewijzigd (destijds byte-voor-byte geverifieerd).
+
+**Aanname, als eerste te toetsen — één oorzaak verklaart drie kapotte
+schermen.** Drie functies in `bands.js` vangen élke databasefout stil af:
+
+| Functie | Vraagt op | Bij een fout |
+|---|---|---|
+| `renderFounderTransferSection()` | `band_members.founder_offer` | leeg vak, geen knop "Beheer overdragen" |
+| `loadFounderOffers()` | `band_members.founder_offer` + RPC `tt_expire_old_founder_offers` | geen banner |
+| `loadBandInvites()` | `band_members` met `bands(...)` | geen banner |
+
+Ontbreekt de kolom `founder_offer`, of blokkeert een RLS-regel de vraag, dan
+verdwijnen die onderdelen zonder melding, zonder console-fout, zonder spoor.
+Dat past bij "helemaal stuk" beter dan een losse bug. `loadFounderOffers()`
+heeft in de code al de kanttekening staan dat het losse script
+`F-V16-oprichterschap-aanbod.sql` nodig is voor die kolom.
+
+**Nodig van Ronald (Claude heeft geen databasetoegang):**
+1. De echte foutmelding — bandomgeving openen, F12, tabbladen Console en
+   Network, kijken welke Supabase-aanroep faalt en met welke tekst. Dit is
+   het snelst en zegt waarschijnlijk meteen genoeg.
+2. Bestaat de kolom `band_members.founder_offer` (en `founder_offer_at`)?
+3. Bestaan de functies `tt_accept_founder_offer` en
+   `tt_expire_old_founder_offers`?
+4. De RLS-regels op `band_members`.
+
+**Eerste punt van die sessie, los van de oorzaak:** het stille falen is een
+eigen defect. Drie schermen die zonder enige melding verdwijnen maken elke
+storing onvindbaar — ook deze. De `catch`-blokken horen minstens naar
+`logAppError()` te schrijven (bestaat al, `core.js`, TT-64).
+
+**Testgereedschap:** in de gedeelde map op Ronalds laptop staat
+`_testgereedschap-niet-uploaden/supabase-stub.js` — een vervanger voor de
+Supabase-bibliotheek met vaste testdata (een band met twee bevestigde leden,
+waarvan één oprichter). Daarmee is de bandomgeving lokaal met Playwright te
+testen zonder databasetoegang. Niet naar de repo uploaden.
+
+---
+
+**Werkwijze (09-09-2026, instructie Ronald):** openstaande onderwerpen,
+bevindingen en overdrachten komen in dit bestand. Geen losse bestanden of
+aparte projectdocumenten ernaast. `actielijst.md` blijft het enige bestand
+met de actuele stand.
+
+---
+
+**Bestandsuitwisseling en repo (09-09-2026) — uitgezocht, met een fout van Claude erin.**
+
+**Aanleiding:** Ronald: "vergeleken met 1 index bestand is het nu 10x meer
+werk om bestanden te downloaden, uitpakken, kopieren, zip verwijderen,
+kopieren naar test." Terechte klacht. Claude leverde die sessie eerst in een
+zip, wat een onnodige stap toevoegde.
+
+**Geverifieerd — lezen is opgelost.** Claude kan de repo zelf klonen
+(`git clone https://github.com/tt-rw/talenttent.org.git` werkt vanuit de
+sessie). **Ronald hoeft bij sessiestart geen bestanden meer te uploaden.**
+Dat haalt meteen het risico weg waar deze sessie twee keer op stukliep:
+bestanden die wel in de uploadlijst stonden maar niet aankwamen
+(`styles.css`, `utils.js`, `wizard.js`).
+
+**Geverifieerd — schrijven kan niet vanuit Claude.** Alle drie de routes zijn
+getest en dicht:
+
+| Route | Uitkomst |
+|---|---|
+| GitHub REST API met een persoonlijk token | 403 van de proxy — repo niet in de toegestane set van de sessie |
+| `git push` over HTTPS met datzelfde token | 403 van de git-proxy, zelfde reden |
+| `git push` vanaf Ronalds laptop | 403 van de proxy na CONNECT; git staat er wel (2.34.1) |
+| GitHub-connector in de MCP-registry | bestaat niet |
+
+Het token zelf werkte (`api.github.com/user` gaf 200 en herkende `tt-rw`).
+Lezen mag, schrijven niet. Dit is een beleidsbeperking van de omgeving, geen
+storing — er omheen werken is expliciet verboden en gebeurt niet.
+
+**Fout van Claude, letterlijk benoemd:** Claude vroeg Ronald om een GitHub-
+token **vóórdat** Claude had gecontroleerd of pushen überhaupt mogelijk was.
+Claude testte alleen het lezen en nam aan dat schrijven dan ook zou werken.
+Het token is daarna direct ingetrokken. Dit is precies de aanname-fout die
+werkregel 1 verbiedt.
+
+**Werkende afspraak, vanaf nu:**
+- Claude kloont de repo zelf bij sessiestart. Ronald uploadt niets meer aan
+  Claude.
+- Claude zet alleen de **gewijzigde** bestanden in de gedeelde map op Ronalds
+  laptop: `Desktop\Projecten\_TalentTent\claude\gedeelde map`. Ronald
+  koppelt die map bij sessiestart in de desktop-app (één klik).
+- Ronald sleept die bestanden in één keer naar GitHub. Geen zip, geen
+  uitpakken, geen downloaden.
+- In die map staat ook `_testgereedschap-niet-uploaden/supabase-stub.js` —
+  niet naar de repo uploaden.
+
+**Repo-naam gewijzigd:** de repo heet nu `tt-rw/talenttent.org`. De oude naam
+`tt-rw/talenttent` werkt nog via een doorverwijzing van GitHub, maar staat
+waarschijnlijk niet meer in keuzelijsten. **De projectinstructies noemen nog
+`github.com/tt-rw/talenttent` — dat mag `talenttent.org` worden.**
+
+**`talenttent-test` loopt achter (nog niet opgelost, geen haast):** daar staat
+`musicians.js` nog zonder TT-226/TT-227, en `bands.js`, `index.html` en
+`styles.css` zijn er niet bijgewerkt. `styles.css` is er wel al bijgewerkt
+met het TT-224/TT-225-herstel.
+
+---
+
+**Bijgewerkte projectdocumenten (09-09-2026).**
+
+Deze staan in het claude.ai-project, niet in de repo. Ze zijn deze sessie
+door Claude bijgewerkt:
+
+| Document | Wijziging |
+|---|---|
+| `huisstijl-en-consistentie.md` §5 | Nieuwe subsectie "Volgorde en formaat in een knoppenrij" (TT-228), inclusief waarom `flex:1` niet werkt |
+| `huisstijl-en-consistentie.md` §8 | Nieuwe regel: een bevestiging in twee stappen is altijd te annuleren (TT-226) |
+| `huisstijl-en-consistentie.md` §3 | Knoppenrij-tussenruimte van 10px naar 8px |
+| `huisstijl-en-consistentie.md` §11 | Herschreven — beschreef nog de bovenbalk met tabs op desktop, wat sinds TT-224 niet meer klopt |
+| `app-first-toetslijst.md` punt 2 | Herschreven naar "Webapp als spiegel van de telefoon-app". Stond open sinds 07-09-2026 |
 
 ---
 
