@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260909c">
+<link rel="stylesheet" href="styles.css?v=20260910a">
 </head>
 <body>
 
@@ -904,9 +904,12 @@
            elkaar blijft staan. Straal stond voorheen verstopt achter "Meer
            filters"; nu altijd zichtbaar naast Plaats, wat logischer is
            zodra je een vertrekpunt instelt. -->
+      <!-- TT-233 (10-09-2026): Plaats en Straal op één regel, via .filter-row-city
+           i.p.v. inline stijlen. Straal is een wielveld: 104px vast, groeit niet
+           mee met Plaats. Huisstijl §7.2. -->
       <div class="field" style="margin-bottom:16px;">
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+        <div class="filter-row-city">
+          <div class="city-search-wrap frc-plaats">
             <label style="display:block;margin-bottom:4px;">Plaats</label>
             <input type="text" id="filterCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch(); scheduleSearchCityStatus('filterCity','filterCityStatus');"
@@ -914,61 +917,47 @@
               onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
-          <!-- TT-232: straal is een draaiwiel geworden. 5 t/m 50 km per 5,
-               daarna per 25 tot 500 km. Startwaarde 5 km. -->
-          <div style="flex-shrink:0;">
+          <div class="frc-straal">
             <label style="display:block;margin-bottom:4px;">Straal</label>
-            <div class="wheel-pair">
-              <div class="picker-group">
-                <div id="wheelRadius"></div>
-                <div class="picker-band" aria-hidden="true"></div>
-              </div>
-              <span class="wheel-sep">km</span>
+            <div class="wheel-field" id="filterRadiusField">
+              <span class="wheel-field-label"></span>
+              <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
             </div>
-            <input type="hidden" id="filterRadius" value="5">
+            <input type="hidden" id="filterRadius" value="25">
           </div>
         </div>
         <div id="filterCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
       </div>
 
-      <!-- TT-232 (09-09-2026): de toggle "Meer filters" is weg — alle filters
-           staan weer altijd open. Dat kan nu, omdat Doel eruit is en Leeftijd
-           en Niveau samen op één regel staan. Vervangt TT-136 (23-08-2026).
-           Leeftijd en Niveau zijn draaiwielen met vaste stappen; "Geen"
-           bovenaan elk wiel zet dat filter uit. -->
+      <!-- TT-233 (10-09-2026): Leeftijd en Niveau naast elkaar, allebei een
+           wielveld. Het wiel zelf staat niet meer vast open in het formulier —
+           het komt op in een bladwijzer (#wheelSheetModal) en gaat weer weg.
+           Huisstijl §7.1. De losse toelichtingsregel onder de rij is vervallen;
+           de betekenis staat op de terugleesregel in de bladwijzer en achter
+           de i-knop. -->
       <div class="wheel-filter-row">
         <div class="field">
           <label>Leeftijd</label>
-          <div class="picker-group">
-            <div id="wheelAgeMin"></div>
-            <span class="wheel-sep">t/m</span>
-            <div id="wheelAgeMax"></div>
-            <div class="picker-band" aria-hidden="true"></div>
+          <div class="wheel-field" id="filterAgeField">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
           </div>
           <input type="hidden" id="filterAgeMin">
           <input type="hidden" id="filterAgeMax">
         </div>
         <div class="field">
-          <!-- TT-232 (09-09-2026, Ronalds schets): dezelfde i-knop als bij
-               "Mijn Instrumenten" in de wizard, met dezelfde uitleg. Een kaal
-               cijfer 1 t/m 5 zegt niets zonder die tabel. -->
           <label class="label-with-info">
             <span>Niveau</span>
             <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" aria-label="Wat betekenen de niveaus 1 tot en met 5?" title="Toelichting op niveau">i</button>
           </label>
-          <div class="picker-group">
-            <div id="wheelNiveauMin"></div>
-            <span class="wheel-sep">t/m</span>
-            <div id="wheelNiveauMax"></div>
-            <div class="picker-band" aria-hidden="true"></div>
+          <div class="wheel-field" id="filterNiveauField">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
           </div>
           <input type="hidden" id="filterNiveauMin">
           <input type="hidden" id="filterNiveauMax">
         </div>
       </div>
-      <!-- Leest het gekozen bereik terug in woorden, zodat het cijfer op het
-           wiel betekenis krijgt zonder de tabel te openen. -->
-      <div id="filterNiveauHint" class="wheel-hint"></div>
 
       <!-- TT-10: filters ververst nu automatisch bij elke klik/wijziging;
            knop blijft staan als duidelijk, expliciet alternatief (bijv. na
@@ -1927,6 +1916,29 @@
   </div>
 </div>
 
+<!-- TT-233 (10-09-2026): de bladwijzer met het draaiwiel. Huisstijl §7.1.
+     Bewust .modal-overlay: dat geeft de bestaande scrollvergrendeling en de
+     terugknop-afhandeling in core.js gratis. De waarnemer in core.js leest de
+     modals één keer bij het laden, dus dit element moet in de HTML staan en
+     mag niet in JS worden aangemaakt.
+     Bewust géén .modal-box: die wordt op mobiel 100dvh (volledig scherm), en
+     een keuzelaag is geen scherm. -->
+<div class="modal-overlay wheel-overlay" id="wheelSheetModal" onclick="if(event.target===this)closeWheelSheet()">
+  <div class="wheel-sheet" role="dialog" aria-modal="true" aria-labelledby="wheelSheetTitle">
+    <div class="wheel-sheet-grip" aria-hidden="true"></div>
+    <div class="wheel-sheet-head">
+      <span id="wheelSheetTitle"></span>
+      <button type="button" class="niveau-info-btn" id="wheelSheetInfo" style="display:none;" aria-label="Toelichting">i</button>
+    </div>
+    <div class="picker-group" id="wheelSheetGroup"></div>
+    <div class="wheel-hint" id="wheelSheetHint"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="wheelSheetClear()">Wissen</button>
+      <button class="btn btn-primary" onclick="closeWheelSheet()">Gereed</button>
+    </div>
+  </div>
+</div>
+
 <!-- TT-63-fix (23-08-2026): Gebruiksvoorwaarden/Privacyverklaring/Gedragscode
      openden voorheen via <a href="#terms" target="_blank">. Op meerdere
      mobiele browsers/webviews (bevestigd: een WhatsApp-ingebedde browser)
@@ -1965,16 +1977,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260909c"></script>
-<script src="utils.js?v=20260909c"></script>
-<script src="auth.js?v=20260909c"></script>
-<script src="postcode.js?v=20260909c"></script>
-<script src="wizard.js?v=20260909c"></script>
-<script src="search.js?v=20260909c"></script>
-<script src="musicians.js?v=20260909c"></script>
-<script src="bands.js?v=20260909c"></script>
-<script src="messages.js?v=20260909c"></script>
-<script src="modals-shared.js?v=20260909c"></script>
+<script src="core.js?v=20260910a"></script>
+<script src="utils.js?v=20260910a"></script>
+<script src="auth.js?v=20260910a"></script>
+<script src="postcode.js?v=20260910a"></script>
+<script src="wizard.js?v=20260910a"></script>
+<script src="search.js?v=20260910a"></script>
+<script src="musicians.js?v=20260910a"></script>
+<script src="bands.js?v=20260910a"></script>
+<script src="messages.js?v=20260910a"></script>
+<script src="modals-shared.js?v=20260910a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

@@ -2646,18 +2646,20 @@
   }
 
 
-  /* ─── Draaiwiel (TT-232, 09-09-2026) ──────────────────────────────────────
-     De vorm die iedereen van zijn telefoon kent: één paneel per groep, de
-     waarden vervagen naar boven en onder, en één rustige balk markeert de
-     gekozen regel. Vijf regels zichtbaar, de middelste is gekozen.
-     Regelhoogte 32px staat ook in utils.js als WHEEL_ITEM_H — die twee moeten
-     gelijk blijven, anders leest het wiel de verkeerde waarde af. */
+  /* ─── Draaiwiel (TT-233, 10-09-2026) ──────────────────────────────────────
+     Huisstijl §7.1. De vorm die iedereen van zijn telefoon kent: één paneel
+     per keuze, de waarden vervagen naar boven en onder, en één balk markeert
+     de gekozen regel. Vijf regels zichtbaar, de middelste is gekozen.
+     Regelhoogte 44px staat ook in utils.js als WHEEL_ITEM_H — die twee moeten
+     gelijk blijven, anders leest het wiel de verkeerde waarde af.
+     Vervangt het TT-232-blok, dat twee keer in dit bestand stond. */
   .picker-group {
     position: relative;
     display: flex;
     align-items: stretch;
+    justify-content: center;    /* kolommen als blok in het midden, zie hieronder */
     gap: 4px;
-    height: 160px;              /* 5 regels van 32px */
+    height: 220px;              /* 5 regels van 44px */
     padding: 0 8px;
     background: var(--surface2);
     border: var(--line) solid var(--border);
@@ -2666,74 +2668,175 @@
   }
   .picker-group:focus-within { border-color: var(--accent); }
   /* De markering van de gekozen regel: één balk over de hele groep, geen
-     lijnen per wiel. Scrollt niet mee. */
+     lijnen per kolom. Scrollt niet mee. De balk loopt wél over de volle
+     breedte — die markeert de regel, niet de kolom. */
   .picker-band {
     position: absolute;
-    left: 6px; right: 6px;
-    top: 64px;                  /* 2 regels van 32px */
-    height: 32px;
-    background: rgba(255, 255, 255, 0.07);
+    left: 8px; right: 8px;
+    top: 88px;                  /* 2 regels van 44px */
+    height: 44px;
+    background: rgba(245, 197, 24, 0.10);
+    border-top: 1px solid rgba(245, 197, 24, 0.35);
+    border-bottom: 1px solid rgba(245, 197, 24, 0.35);
     border-radius: 8px;
     pointer-events: none;
   }
-  .wheel { position: relative; height: 100%; width: 56px; }
+  /* Vaste kolombreedte, geen flex:1. De meeste gebruikers bedienen de app met
+     hun rechterduim; kolommen die de volle breedte uitrekken duwen de eerste
+     kolom tegen de linkerrand, buiten duimbereik. */
+  .wheel { position: relative; height: 100%; width: 72px; flex: 0 0 auto; }
   .wheel:focus { outline: none; }
+  .wheel:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
   .wheel-scroll {
     height: 100%;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
     /* Vervagen naar boven en onder — het kenmerk van dit soort wiel. */
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 34%, #000 66%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 34%, #000 66%, transparent 100%);
   }
   .wheel-scroll::-webkit-scrollbar { display: none; }
   /* Twee lege regels boven en onder, zodat ook de eerste en de laatste
      waarde in het midden kunnen staan. */
-  .wheel-pad { height: 64px; }
+  .wheel-pad { height: 88px; }
   .wheel-item {
-    height: 32px;
-    line-height: 32px;
+    height: 44px;
+    line-height: 44px;
     text-align: center;
-    font-size: var(--fs-md);
-    color: var(--muted);
+    font-size: 17px;
+    color: #6d6d6d;
     scroll-snap-align: center;
     cursor: pointer;
     user-select: none;
+    white-space: nowrap;
     transition: color 0.15s;
   }
   .wheel-item.selected { color: var(--text); font-weight: 700; }
-  /* "t/m" staat op de hoogte van de gekozen regel, niet in het midden van
-     het paneel — anders lijkt het los te zweven. */
-  .wheel-sep {
+  /* Koppelwoord en eenheid staan op de hoogte van de gekozen regel, als vaste
+     kolom in het paneel — geen los woord naast het paneel. */
+  .wheel-sep,
+  .wheel-unit {
     align-self: flex-start;
-    margin-top: 64px;
-    height: 32px;
-    line-height: 32px;
+    margin-top: 88px;
+    height: 44px;
+    line-height: 44px;
     color: var(--muted);
     font-size: var(--fs-sm);
+    text-align: center;
+    flex: 0 0 auto;
   }
-  .wheel-pair { display: flex; align-items: center; gap: 8px; }
-  .label-with-info { display: flex; align-items: center; gap: 8px; }
-  .wheel-hint {
-    font-size: var(--fs-sm);
+  .wheel-sep  { width: 44px; }
+  .wheel-unit { width: 52px; font-size: 15px; }
+
+  /* ─── Wielveld: het tikveld dat de bladwijzer opent ──────────────────────── */
+  .wheel-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* de waarde staat gecentreerd, huisstijl §7.2 */
+    min-height: 44px;
+    padding: 0 26px;
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius);
+    font-size: 16px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .wheel-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Gouden rand zodra dit filter aanstaat — in één blik te zien wat er leeft. */
+  .wheel-field.is-set { border-color: var(--accent); }
+  .wheel-field-label { overflow: hidden; text-overflow: ellipsis; }
+  .wheel-field-chevron {
+    position: absolute;
+    right: 10px;
     color: var(--muted);
-    margin: 8px 0 16px;
-    min-height: 16px;
+    font-size: 12px;
+    pointer-events: none;
   }
 
-  /* Leeftijd en Niveau staan op één regel: twee pickers naast elkaar. */
-  .wheel-filter-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 8px;
+  /* ─── Bladwijzer met het wiel ────────────────────────────────────────────── */
+  /* Bewuste uitzondering op §9 (volledig scherm op mobiel): een keuzelaag van
+     circa 300px is geen scherm. Daarom een eigen klasse en niet .modal-box —
+     die krijgt op mobiel 100dvh. */
+  .wheel-overlay {
+    align-items: flex-end;
+    padding: 0;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.55);
   }
-  .wheel-filter-row .field { min-width: 0; }
-  @media (max-width: 560px) {
-    .wheel-filter-row { gap: 12px; }
-    .wheel-filter-row .wheel { width: 46px; }
-    .picker-group { padding: 0 6px; }
+  .wheel-sheet {
+    width: 100%;
+    background: var(--surface);
+    border-top: var(--line) solid var(--border);
+    border-radius: 16px 16px 0 0;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: wheelSheetUp 0.18s ease-out;
+  }
+  @keyframes wheelSheetUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wheel-sheet { animation: none; }
+  }
+  .wheel-sheet-grip {
+    width: 36px; height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    margin: 0 auto 14px;
+  }
+  .wheel-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  /* Terugleesregel onder het wiel: "Niveau 3 t/m 5 — Half-Gevorderd t/m
+     Professioneel". Vaste hoogte, zodat de knoppen eronder niet verspringen. */
+  .wheel-hint {
+    font-size: var(--fs-sm);
+    color: var(--accent);
+    text-align: center;
+    margin: 12px 0 0;
+    min-height: 18px;
+  }
+  .wheel-sheet .btn-row { margin-top: 14px; }
+
+  /* ─── Rijen op het zoekscherm (huisstijl §7.2) ───────────────────────────── */
+  /* Plaats en Straal op één regel. Straal is zo breed als "500 km" nodig heeft
+     en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
+     sterk in lengte. */
+  .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
+  .filter-row-city .frc-plaats { flex: 1 1 auto; min-width: 0; }
+  .filter-row-city .frc-straal { flex: 0 0 auto; }
+  .filter-row-city .frc-straal .wheel-field { min-width: 104px; }
+
+  /* Leeftijd en Niveau naast elkaar: twee exact gelijke kolommen. Zelfde
+     principe als een knoppenrij (§5) — 1fr is altijd even breed. */
+  .wheel-filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  /* Het label bij Niveau draagt een i-knop en is daardoor hoger dan het label
+     bij Leeftijd. Zonder deze regel begint het ene veld 12px lager dan het
+     andere. De cellen zijn even hoog (grid), dus de velden onderaan uitlijnen
+     zet ze weer op één regel. */
+  .wheel-filter-row .field { min-width: 0; display: flex; flex-direction: column; }
+  .wheel-filter-row .field .wheel-field { margin-top: auto; }
+  /* Onder 360px past de rij niet meer naast elkaar. */
+  @media (max-width: 359px) {
+    .wheel-filter-row { grid-template-columns: 1fr; }
   }
 
   /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
@@ -2743,30 +2846,3 @@
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */
   .label-with-info { display: flex; align-items: center; gap: 8px; }
-  /* Terugleesregel onder de niveauwielen: "Niveau 3 t/m 5 — Half-Gevorderd
-     t/m Professioneel". Vaste hoogte, zodat de knoppen eronder niet
-     verspringen bij het draaien. */
-  .wheel-hint {
-    font-size: var(--fs-sm);
-    color: var(--muted);
-    margin: -8px 0 16px;
-    min-height: 16px;
-  }
-
-  .wheel-pair { display: flex; align-items: center; gap: 8px; }
-  .wheel-sep { color: var(--muted); font-size: var(--fs-sm); }
-
-  /* Leeftijd en Niveau staan op één regel: vier wielen naast elkaar. Op een
-     telefoon past dat alleen met smallere wielen en kleinere tussenruimtes —
-     zonder deze regels valt het vierde wiel buiten het paneel. */
-  .wheel-filter-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .wheel-filter-row .field { min-width: 0; }
-  @media (max-width: 560px) {
-    .wheel-filter-row { gap: 12px; }
-    .wheel-filter-row .wheel { width: 48px; }
-    .wheel-filter-row .wheel-pair { gap: 4px; }
-  }

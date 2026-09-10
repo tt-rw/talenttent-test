@@ -651,12 +651,13 @@ function removeSong(i) {
 // Het wiel schrijft zijn waarde altijd naar een verborgen invoerveld
 // (cfg.inputId). Alle bestaande code die die waarde uitleest, blijft daardoor
 // ongewijzigd werken.
-const WHEEL_ITEM_H = 32;   // moet gelijk zijn aan .wheel-item in styles.css
+const WHEEL_ITEM_H = 44;   // moet gelijk zijn aan .wheel-item in styles.css
 const WHEEL_ZICHTBAAR = 5; // aantal zichtbare regels; .wheel-pad = 2 regels
 const WHEELS = {};
 
-// cfg: { id, inputId, values[], value, onChange, ariaLabel, labels? }
+// cfg: { id, inputId, values[], value, onChange, onPick, ariaLabel, labels? }
 // values mag '' bevatten; dat is de stand "Geen" (filter uit).
+// onPick wordt alleen aangeroepen bij een tik op een waarde, niet bij scrollen.
 function initWheel(cfg) {
   const el = document.getElementById(cfg.id);
   if (!el) return;
@@ -667,7 +668,7 @@ function initWheel(cfg) {
   el.setAttribute('role', 'listbox');
   if (cfg.ariaLabel) el.setAttribute('aria-label', cfg.ariaLabel);
   // Geen eigen rand en geen eigen markeringsbalk: die horen bij de groep
-  // (.picker-group) eromheen, zodat vier wielen samen één picker vormen —
+  // (.picker-group) eromheen, zodat de kolommen samen één picker vormen —
   // het patroon dat iedereen van zijn telefoon kent.
   el.innerHTML = `
     <div class="wheel-scroll">
@@ -683,7 +684,10 @@ function initWheel(cfg) {
   // Klikken op een waarde kiest die waarde — sneller dan scrollen bij een
   // korte lijst (niveau 1 t/m 5).
   el.querySelectorAll('.wheel-item').forEach(item => {
-    item.addEventListener('click', () => setWheelIndex(cfg.id, parseInt(item.dataset.i), true));
+    item.addEventListener('click', () => {
+      setWheelIndex(cfg.id, parseInt(item.dataset.i), true);
+      if (typeof cfg.onPick === 'function') cfg.onPick(getWheelValue(cfg.id));
+    });
   });
 
   // Tijdens het scrollen leest de app niet elke pixel uit: pas 140 ms na de
@@ -750,4 +754,179 @@ function setWheelValue(id, value, notify) {
   if (!s) return;
   const i = s.values.indexOf(value);
   setWheelIndex(id, i >= 0 ? i : 0, !!notify);
+}
+
+
+// ─── Wielveld + bladwijzer (TT-233, 10-09-2026) ──────────────────────────────
+// Huisstijl §7.1: een wiel staat nooit vast open in een formulier. Het
+// formulier toont een tikveld met de stand in woorden; het wiel komt op in een
+// bladwijzer en verdwijnt zodra de keuze rond is.
+//
+// De verborgen invoervelden blijven de enige bron van waarheid. Het wiel wordt
+// bij elk openen opnieuw opgebouwd. Dat is bewust: een wiel dat wordt
+// opgebouwd terwijl het onzichtbaar is, kan zijn scrollpositie niet zetten —
+// dat was de oorzaak van de straal-fout (wiel startte op de laatste waarde).
+
+const WHEEL_FIELDS = {};
+let actiefWielVeld = null;
+
+// cfg: {
+//   id, fieldId, title,
+//   columns: [{ inputId, values, labels?, ariaLabel }],
+//   sep?: 't/m', unit?: 'km',
+//   value: [beginwaarde per kolom],
+//   clearTo?: [waarde per kolom bij "Wissen"],
+//   koppelBereik?: true   -> kolom 2 mag niet onder kolom 1 zakken
+//   format(waarden) -> tekst in het gesloten veld
+//   hint(waarden)   -> terugleesregel onder het wiel
+//   onChange()      -> na elke wijziging
+// }
+function initWheelField(cfg) {
+  WHEEL_FIELDS[cfg.id] = cfg;
+  const el = document.getElementById(cfg.fieldId);
+  if (!el) return;
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.addEventListener('click', () => openWheelSheet(cfg.id));
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openWheelSheet(cfg.id); }
+  });
+  setWheelFieldValues(cfg.id, cfg.value, false);
+}
+
+function wheelFieldValues(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return [];
+  return cfg.columns.map(c => {
+    const inp = document.getElementById(c.inputId);
+    return inp ? inp.value : '';
+  });
+}
+
+// Zet de waarden in de verborgen velden, werkt het tikveld bij en draait — als
+// de bladwijzer openstaat — de wielen mee.
+function setWheelFieldValues(id, waarden, notify) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return;
+  cfg.columns.forEach((c, i) => {
+    const inp = document.getElementById(c.inputId);
+    if (inp) inp.value = (waarden && waarden[i] != null) ? waarden[i] : '';
+    const wielId = wheelColumnId(id, i);
+    if (WHEELS[wielId]) setWheelValue(wielId, waarden && waarden[i] != null ? waarden[i] : '', false);
+  });
+  refreshWheelField(id);
+  if (notify && typeof cfg.onChange === 'function') cfg.onChange();
+}
+
+function wheelColumnId(id, i) { return 'wheelCol_' + id + '_' + i; }
+
+// Werkt de tekst in het tikveld bij, plus de gouden rand als het filter aanstaat.
+function refreshWheelField(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return;
+  const el = document.getElementById(cfg.fieldId);
+  if (!el) return;
+  const waarden = wheelFieldValues(id);
+  const labelEl = el.querySelector('.wheel-field-label');
+  if (labelEl) labelEl.textContent = cfg.format(waarden);
+  const aan = typeof cfg.isActief === 'function' ? cfg.isActief(waarden)
+            : waarden.some(v => v !== '' && v != null);
+  el.classList.toggle('is-set', !!aan);
+  const hintEl = document.getElementById('wheelSheetHint');
+  if (hintEl && actiefWielVeld === id && typeof cfg.hint === 'function') {
+    hintEl.textContent = cfg.hint(waarden);
+  }
+}
+
+function openWheelSheet(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return;
+  actiefWielVeld = id;
+  document.getElementById('wheelSheetTitle').textContent = cfg.title;
+
+  const infoBtn = document.getElementById('wheelSheetInfo');
+  if (infoBtn) {
+    infoBtn.style.display = cfg.infoActie ? '' : 'none';
+    infoBtn.onclick = cfg.infoActie || null;
+  }
+
+  // Eén paneel, kolommen ernaast, één markeringsbalk erover. Het koppelwoord
+  // ("t/m") en de eenheid ("km") zijn vaste kolommen in het paneel, geen losse
+  // woorden ernaast — huisstijl §7.1.
+  const groep = document.getElementById('wheelSheetGroup');
+  let html = '';
+  cfg.columns.forEach((c, i) => {
+    if (i > 0 && cfg.sep) html += `<span class="wheel-sep" aria-hidden="true">${escHtml(cfg.sep)}</span>`;
+    html += `<div id="${wheelColumnId(id, i)}"></div>`;
+  });
+  if (cfg.unit) html += `<span class="wheel-unit" aria-hidden="true">${escHtml(cfg.unit)}</span>`;
+  html += '<div class="picker-band" aria-hidden="true"></div>';
+  groep.innerHTML = html;
+
+  // Eén kolom sluit op de tik die de waarde kiest. Een bereik van twee kolommen
+  // niet: daar is de keuze pas af als beide kolommen staan.
+  const sluitBijTik = cfg.columns.length === 1;
+  const waarden = wheelFieldValues(id);
+
+  document.getElementById('wheelSheetModal').classList.add('visible');
+
+  // Pas opbouwen als de bladwijzer echt zichtbaar is — een verborgen element
+  // heeft geen hoogte en negeert een gezette scrollpositie.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    cfg.columns.forEach((c, i) => {
+      initWheel({
+        id: wheelColumnId(id, i),
+        inputId: c.inputId,
+        values: c.values,
+        labels: c.labels,
+        value: waardeInKolom(c, waarden[i]),
+        ariaLabel: c.ariaLabel,
+        onChange: () => {
+          if (cfg.koppelBereik) koppelWielBereik(id);
+          refreshWheelField(id);
+          if (typeof cfg.onChange === 'function') cfg.onChange();
+        },
+        onPick: () => { if (sluitBijTik) closeWheelSheet(); }
+      });
+    });
+    refreshWheelField(id);
+  }));
+}
+
+// Een verborgen veld levert altijd tekst; het wiel werkt met de oorspronkelijke
+// waarden (getallen). Zoek de bijpassende waarde op, val terug op "Geen".
+function waardeInKolom(kolom, ruw) {
+  if (ruw === '' || ruw == null) return kolom.values.includes('') ? '' : kolom.values[0];
+  const gevonden = kolom.values.find(v => String(v) === String(ruw));
+  return gevonden !== undefined ? gevonden : (kolom.values.includes('') ? '' : kolom.values[0]);
+}
+
+// Een minimum boven het maximum geeft altijd nul resultaten. Het andere wiel
+// schuift mee naar de dichtstbijzijnde waarde die het bereik heel houdt.
+function koppelWielBereik(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg || cfg.columns.length < 2) return;
+  const minId = wheelColumnId(id, 0);
+  const maxId = wheelColumnId(id, 1);
+  if (!WHEELS[minId] || !WHEELS[maxId]) return;
+  const min = getWheelValue(minId);
+  const max = getWheelValue(maxId);
+  if (min === '' || max === '' || Number(min) <= Number(max)) return;
+  const nieuw = WHEELS[maxId].values.find(v => v !== '' && Number(v) >= Number(min));
+  setWheelValue(maxId, nieuw === undefined ? '' : nieuw, false);
+}
+
+function closeWheelSheet() {
+  document.getElementById('wheelSheetModal').classList.remove('visible');
+  if (actiefWielVeld) refreshWheelField(actiefWielVeld);
+  actiefWielVeld = null;
+}
+
+// "Wissen" zet dit ene filter terug naar zijn beginstand en zoekt opnieuw.
+function wheelSheetClear() {
+  const id = actiefWielVeld;
+  if (!id) return;
+  const cfg = WHEEL_FIELDS[id];
+  setWheelFieldValues(id, cfg.clearTo || cfg.columns.map(() => ''), true);
+  closeWheelSheet();
 }

@@ -50,8 +50,11 @@ let searchSortMode    = 'score';
 const WHEEL_AGE_MIN = [''].concat([13,16,19,22], rangeStep(25, 95, 5));
 const WHEEL_AGE_MAX = [''].concat([15,18,21,24], rangeStep(30, 95, 5), [99]);
 const WHEEL_NIVEAU  = ['', 1, 2, 3, 4, 5];
-// Straal: per 5 km tot 50, daarna per 25 tot 500.
-const WHEEL_RADIUS  = rangeStep(5, 50, 5).concat(rangeStep(75, 500, 25));
+// TT-233 (10-09-2026): straal terug van 28 naar 10 standen. 28 standen tot
+// 500 km vroegen een lange scrollbeweging voor een keuze die in de praktijk
+// tussen 10 en 50 km ligt. Nederland is ongeveer 300 km lang.
+const WHEEL_RADIUS  = [5, 10, 15, 25, 50, 75, 100, 150, 250, 500];
+const STRAAL_STANDAARD = 25;
 
 function rangeStep(from, to, step) {
   const out = [];
@@ -236,42 +239,58 @@ function initSearchFilters() {
     onChange: runSearch
   });
 
-  // TT-232 (09-09-2026): de vier draaiwielen. Elk wiel schrijft naar het
-  // verborgen invoerveld dat runSearch() al uitlas — de filterlogica zelf is
-  // dus niet gewijzigd. Straal heeft geen stand "Geen": zoeken zonder straal
-  // bestaat niet, 5 km is de kleinste.
-  initWheel({ id: 'wheelAgeMin', inputId: 'filterAgeMin', values: WHEEL_AGE_MIN,
-              value: '', ariaLabel: 'Leeftijd vanaf',
-              onChange: () => { corrigeerBereik('wheelAgeMin', 'wheelAgeMax', 'min'); runSearch(); } });
-  initWheel({ id: 'wheelAgeMax', inputId: 'filterAgeMax', values: WHEEL_AGE_MAX,
-              value: '', ariaLabel: 'Leeftijd tot en met',
-              onChange: () => { corrigeerBereik('wheelAgeMin', 'wheelAgeMax', 'max'); runSearch(); } });
-  initWheel({ id: 'wheelNiveauMin', inputId: 'filterNiveauMin', values: WHEEL_NIVEAU,
-              value: '', ariaLabel: 'Niveau vanaf',
-              onChange: () => { corrigeerBereik('wheelNiveauMin', 'wheelNiveauMax', 'min'); toonNiveauBereik(); runSearch(); } });
-  initWheel({ id: 'wheelNiveauMax', inputId: 'filterNiveauMax', values: WHEEL_NIVEAU,
-              value: '', ariaLabel: 'Niveau tot en met',
-              onChange: () => { corrigeerBereik('wheelNiveauMin', 'wheelNiveauMax', 'max'); toonNiveauBereik(); runSearch(); } });
-  initWheel({ id: 'wheelRadius', inputId: 'filterRadius', values: WHEEL_RADIUS,
-              value: 5, ariaLabel: 'Zoekstraal in kilometers', onChange: runSearch });
-  toonNiveauBereik();
-}
+  // TT-233 (10-09-2026): de drie wielvelden. Elk veld opent een bladwijzer met
+  // het wiel erin; het wiel schrijft naar dezelfde verborgen invoervelden die
+  // runSearch() al uitlas. De filterlogica is dus niet gewijzigd.
+  initWheelField({
+    id: 'radius',
+    fieldId: 'filterRadiusField',
+    title: 'Straal',
+    unit: 'km',
+    columns: [{ inputId: 'filterRadius', values: WHEEL_RADIUS, ariaLabel: 'Zoekstraal in kilometers' }],
+    value: [STRAAL_STANDAARD],
+    clearTo: [STRAAL_STANDAARD],
+    // Zoeken zonder straal bestaat niet, dus "aan" betekent hier: afgeweken
+    // van de standaard. Een veld dat altijd goud is, zegt niets.
+    isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
+    format: (v) => `${v[0]} km`,
+    hint:   (v) => `Straal ${v[0]} km`,
+    onChange: runSearch
+  });
 
-// TT-232 (09-09-2026): een minimum boven het maximum geeft altijd nul
-// resultaten. In plaats van dat te laten gebeuren, schuift het andere wiel
-// mee naar de dichtstbijzijnde waarde die het bereik heel houdt.
-function corrigeerBereik(minId, maxId, gewijzigd) {
-  const min = getWheelValue(minId);
-  const max = getWheelValue(maxId);
-  if (min === '' || max === '' || Number(min) <= Number(max)) return;
-  if (gewijzigd === 'min') {
-    const nieuw = WHEELS[maxId].values.find(v => v !== '' && Number(v) >= Number(min));
-    setWheelValue(maxId, nieuw === undefined ? '' : nieuw, false);
-  } else {
-    const omgekeerd = WHEELS[minId].values.slice().reverse();
-    const nieuw = omgekeerd.find(v => v !== '' && Number(v) <= Number(max));
-    setWheelValue(minId, nieuw === undefined ? '' : nieuw, false);
-  }
+  initWheelField({
+    id: 'leeftijd',
+    fieldId: 'filterAgeField',
+    title: 'Leeftijd',
+    sep: 't/m',
+    unit: 'jaar',
+    koppelBereik: true,
+    columns: [
+      { inputId: 'filterAgeMin', values: WHEEL_AGE_MIN, ariaLabel: 'Leeftijd vanaf' },
+      { inputId: 'filterAgeMax', values: WHEEL_AGE_MAX, ariaLabel: 'Leeftijd tot en met' }
+    ],
+    value: ['', ''],
+    format: (v) => leeftijdKort(v[0], v[1]),
+    hint:   (v) => leeftijdBereikTekst(v[0], v[1]),
+    onChange: runSearch
+  });
+
+  initWheelField({
+    id: 'niveau',
+    fieldId: 'filterNiveauField',
+    title: 'Niveau',
+    sep: 't/m',
+    koppelBereik: true,
+    infoActie: openMusicianNiveauInfoModal,
+    columns: [
+      { inputId: 'filterNiveauMin', values: WHEEL_NIVEAU, ariaLabel: 'Niveau vanaf' },
+      { inputId: 'filterNiveauMax', values: WHEEL_NIVEAU, ariaLabel: 'Niveau tot en met' }
+    ],
+    value: ['', ''],
+    format: (v) => niveauKort(v[0], v[1]),
+    hint:   (v) => niveauBereikTekst(v[0], v[1]),
+    onChange: runSearch
+  });
 }
 
 // De naam van een niveau, uit dezelfde tabel als de i-knop toont
@@ -285,18 +304,39 @@ function niveauNaam(n) {
   }
 }
 
-// Leest het gekozen niveaubereik terug in woorden onder de wielen.
-function toonNiveauBereik() {
-  const el = document.getElementById('filterNiveauHint');
-  if (!el) return;
-  const min = getWheelValue('wheelNiveauMin');
-  const max = getWheelValue('wheelNiveauMax');
+// Leest een gekozen bereik terug in woorden. De korte vorm staat in het
+// gesloten veld, de lange vorm op de terugleesregel in de bladwijzer.
+function leeftijdKort(min, max) {
+  if (min === '' && max === '') return 'Geen';
+  if (min !== '' && max === '') return `${min}+`;
+  if (min === '' && max !== '') return `t/m ${max}`;
+  if (min === max) return `${min} jaar`;
+  return `${min} t/m ${max}`;
+}
+
+function leeftijdBereikTekst(min, max) {
+  if (min === '' && max === '') return 'Alle leeftijden';
+  if (min !== '' && max === '') return `${min} jaar en ouder`;
+  if (min === '' && max !== '') return `Tot en met ${max} jaar`;
+  if (min === max) return `Alleen ${min} jaar`;
+  return `${min} t/m ${max} jaar`;
+}
+
+function niveauKort(min, max) {
+  if (min === '' && max === '') return 'Geen';
+  if (min !== '' && max === '') return `${min}+`;
+  if (min === '' && max !== '') return `t/m ${max}`;
+  if (min === max) return `Alleen ${min}`;
+  return `${min} t/m ${max}`;
+}
+
+function niveauBereikTekst(min, max) {
   const naam = (n) => { const t = niveauNaam(n); return t ? ` — ${t}` : ''; };
-  if (min === '' && max === '') el.textContent = 'Niveau: alle niveaus';
-  else if (min !== '' && max === '') el.textContent = `Niveau ${min} en hoger${naam(min)}`;
-  else if (min === '' && max !== '') el.textContent = `Niveau ${max} en lager${naam(max)}`;
-  else if (min === max) el.textContent = `Alleen niveau ${min}${naam(min)}`;
-  else el.textContent = `Niveau ${min} t/m ${max} — ${niveauNaam(min)} t/m ${niveauNaam(max)}`;
+  if (min === '' && max === '') return 'Alle niveaus';
+  if (min !== '' && max === '') return `Niveau ${min} en hoger${naam(min)}`;
+  if (min === '' && max !== '') return `Niveau ${max} en lager${naam(max)}`;
+  if (min === max) return `Alleen niveau ${min}${naam(min)}`;
+  return `Niveau ${min} t/m ${max} — ${niveauNaam(min)} t/m ${niveauNaam(max)}`;
 }
 
 // Straal-invoer strikt uitlezen: 0 km moet ook echt 0 km betekenen (0 is
@@ -336,14 +376,11 @@ function resetMusicianSearch() {
   document.getElementById('filterName').value = '';
   document.getElementById('filterCity').value = '';
   document.getElementById('filterCityStatus').textContent = '';
-  // TT-232: de wielen terug naar hun beginstand. false = niet zelf opnieuw
+  // TT-233: de wielvelden terug naar hun beginstand. false = niet zelf opnieuw
   // zoeken; deze functie doet dat hieronder één keer.
-  setWheelValue('wheelAgeMin', '', false);
-  setWheelValue('wheelAgeMax', '', false);
-  setWheelValue('wheelNiveauMin', '', false);
-  setWheelValue('wheelNiveauMax', '', false);
-  setWheelValue('wheelRadius', 5, false);
-  toonNiveauBereik();
+  setWheelFieldValues('leeftijd', ['', ''], false);
+  setWheelFieldValues('niveau',   ['', ''], false);
+  setWheelFieldValues('radius',   [STRAAL_STANDAARD], false);
   filterInstruments = [];
   filterGenres = [];
   renderPickerBadges(PICKERS.filterInstruments);
