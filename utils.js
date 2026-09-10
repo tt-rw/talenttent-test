@@ -991,6 +991,10 @@ function openChoiceMenu(id) {
   const veld = document.getElementById(cfg.fieldId);
   if (!sel || !menu || !veld) return;
 
+  // Loopt de sluitbeweging van de vorige keer nog? Breek die dan eerst af.
+  // Anders ruimt zíj dit net geopende menu een tel later alsnog op (TT-234).
+  if (menu.ttOpruimen) menu.ttOpruimen();
+
   menu.innerHTML = [...sel.options].map(o => `
     <button type="button" class="choice-option${o.value === sel.value ? ' selected' : ''}"
             role="option" aria-selected="${o.value === sel.value ? 'true' : 'false'}"
@@ -1037,6 +1041,7 @@ function sluitKeuzeMenuBijEscape(e) { if (e.key === 'Escape') closeChoiceMenu();
 
 function closeChoiceMenu() {
   document.removeEventListener('keydown', sluitKeuzeMenuBijEscape);
+  document.removeEventListener('click', sluitKeuzeMenuBijKlik);
   if (!actiefKeuzeMenu) return;
   const cfg = CHOICE_FIELDS[actiefKeuzeMenu];
   const menu = cfg && document.getElementById(cfg.menuId);
@@ -1046,13 +1051,37 @@ function closeChoiceMenu() {
   if (!menu) return;
 
   // Dichtklappen met dezelfde beweging, andersom. Pas daarna weghalen.
+  //
+  // TT-234 (10-09-2026): hier zat een fout waardoor het menu na één keer
+  // gebruiken niet meer openging. De vangnet-timer stond op 160 ms, korter dan
+  // de sluitbeweging zelf duurt. De timer ruimde dus als eerste op, brak de
+  // beweging af, en 'animationend' kwam daardoor nooit. De luisteraar bleef
+  // liggen en ving de eerstvolgende beweging op dit element: de ópeningsbeweging
+  // van de volgende keer. Het menu klapte open en meteen weer dicht.
+  //
+  // Drie dingen houden dat nu tegen:
+  // 1. De luisteraar gaat er in elk pad weer af, ook als de timer opruimt.
+  // 2. De luisteraar reageert alleen op de sluitbeweging, op naam.
+  // 3. De timer staat ruim boven de duur van de beweging (140 ms).
   menu.classList.add('sluit');
+  let t = null;
   const opruimen = () => {
+    clearTimeout(t);
+    menu.removeEventListener('animationend', bijEindeBeweging);
+    menu.ttOpruimen = null;
     menu.classList.remove('open', 'sluit', 'naar-boven');
     menu.innerHTML = '';
   };
-  const t = setTimeout(opruimen, 160);
-  menu.addEventListener('animationend', () => { clearTimeout(t); opruimen(); }, { once: true });
+  const bijEindeBeweging = (e) => {
+    if (e.animationName === 'choiceMenuDicht') opruimen();
+  };
+  menu.addEventListener('animationend', bijEindeBeweging);
+  // Staat "minder beweging" aan, dan is er geen sluitbeweging (styles.css) en
+  // komt er dus ook geen 'animationend'. Meteen opruimen, niet 260 ms wachten.
+  const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  t = setTimeout(opruimen, beweegtNiet ? 0 : 260);
+  // openChoiceMenu() gebruikt dit om een nog lopende sluiting af te breken.
+  menu.ttOpruimen = opruimen;
 }
 
 function closeWheelSheet() {
