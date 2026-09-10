@@ -300,9 +300,9 @@ function initSearchFilters() {
 
   // Sorteren en Weergave: geen wiel maar een lijst, in dezelfde bladwijzer.
   initChoiceField({ id: 'sorteren', fieldId: 'filterSortModeField',
-                    selectId: 'filterSortMode', title: 'Sorteren op' });
+                    menuId: 'filterSortModeMenu', selectId: 'filterSortMode' });
   initChoiceField({ id: 'weergave', fieldId: 'musicianViewToggleField',
-                    selectId: 'musicianViewToggle', title: 'Weergave' });
+                    menuId: 'musicianViewToggleMenu', selectId: 'musicianViewToggle' });
 }
 
 // De naam van een niveau, uit dezelfde tabel als de i-knop toont

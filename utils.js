@@ -843,8 +843,6 @@ function openWheelSheet(id) {
   const cfg = WHEEL_FIELDS[id];
   if (!cfg) return;
   actiefWielVeld = id;
-  actiefKeuzeVeld = null;
-  resetSheetInhoud();
   document.getElementById('wheelSheetTitle').textContent = cfg.title;
 
   const infoBtn = document.getElementById('wheelSheetInfo');
@@ -932,26 +930,35 @@ function koppelWielBereik(id) {
 
 // ─── Keuzeveld (TT-233, 10-09-2026) ──────────────────────────────────────────
 // Een korte, ongeordende lijst (Sorteren op, Weergave) hoort niet op een wiel —
-// huisstijl §7.1. Maar een browser-keuzelijst is niet af te ronden en niet te
-// animeren: die lijst tekent het besturingssysteem, niet de pagina. Daarom
-// dezelfde bladwijzer als het wiel, met een lijst erin.
+// huisstijl §7.1. En een browser-keuzelijst is niet af te ronden en niet te
+// animeren: die lijst tekent het besturingssysteem, niet de pagina.
+//
+// Het menu klapt uit onder de knop waar het bij hoort. Dat is waar de gebruiker
+// net getikt heeft en waar zijn ogen al staan; een laag onder aan het scherm
+// haalt hem daar weg. Zelfde vorm als de bestaande menu's in de app
+// (.inline-menu-dropdown), met een opengaande beweging erbij.
 //
 // Het oorspronkelijke <select> blijft in de HTML staan, verborgen. Het is de
 // bron van waarheid, zodat alle bestaande code die .value leest of zet
 // ongewijzigd blijft werken.
 
 const CHOICE_FIELDS = {};
+let actiefKeuzeMenu = null;
 
-// cfg: { id, fieldId, selectId, title }
+// cfg: { id, fieldId, menuId, selectId }
 function initChoiceField(cfg) {
   CHOICE_FIELDS[cfg.id] = cfg;
   const el = document.getElementById(cfg.fieldId);
   if (!el) return;
-  el.setAttribute('role', 'button');
+  el.setAttribute('role', 'combobox');
+  el.setAttribute('aria-haspopup', 'listbox');
+  el.setAttribute('aria-expanded', 'false');
   el.setAttribute('tabindex', '0');
-  el.addEventListener('click', () => openChoiceSheet(cfg.id));
+  el.addEventListener('click', (e) => { e.stopPropagation(); toggleChoiceMenu(cfg.id); });
   el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openChoiceSheet(cfg.id); }
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); e.stopPropagation(); toggleChoiceMenu(cfg.id);
+    }
   });
   refreshChoiceField(cfg.id);
 }
@@ -969,39 +976,34 @@ function refreshChoiceField(id) {
   if (labelEl) labelEl.textContent = optie ? optie.textContent : '';
 }
 
-function openChoiceSheet(id) {
+function toggleChoiceMenu(id) {
+  if (actiefKeuzeMenu === id) closeChoiceMenu();
+  else openChoiceMenu(id);
+}
+
+function openChoiceMenu(id) {
   const cfg = CHOICE_FIELDS[id];
   if (!cfg) return;
+  closeChoiceMenu();
+
   const sel = document.getElementById(cfg.selectId);
-  if (!sel) return;
-  actiefWielVeld = null;
-  actiefKeuzeVeld = id;
+  const menu = document.getElementById(cfg.menuId);
+  const veld = document.getElementById(cfg.fieldId);
+  if (!sel || !menu || !veld) return;
 
-  document.getElementById('wheelSheetTitle').textContent = cfg.title;
-  const infoBtn = document.getElementById('wheelSheetInfo');
-  if (infoBtn) { infoBtn.style.display = 'none'; infoBtn.onclick = null; }
-
-  document.getElementById('wheelSheetGroup').style.display = 'none';
-  document.getElementById('wheelSheetHint').style.display = 'none';
-  document.getElementById('wheelSheetActions').style.display = 'none';
-
-  const lijst = document.getElementById('wheelSheetList');
-  lijst.style.display = '';
-  lijst.setAttribute('role', 'listbox');
-  lijst.innerHTML = [...sel.options].map(o => `
-    <div class="sheet-option${o.value === sel.value ? ' selected' : ''}" role="option"
-         aria-selected="${o.value === sel.value ? 'true' : 'false'}"
-         data-waarde="${escAttr(o.value)}">
+  menu.innerHTML = [...sel.options].map(o => `
+    <button type="button" class="choice-option${o.value === sel.value ? ' selected' : ''}"
+            role="option" aria-selected="${o.value === sel.value ? 'true' : 'false'}"
+            data-waarde="${escAttr(o.value)}">
       <span>${escHtml(o.textContent)}</span>
-      <span class="sheet-option-check" aria-hidden="true">${o.value === sel.value ? '✓' : ''}</span>
-    </div>`).join('');
+      <span class="choice-option-check" aria-hidden="true">${o.value === sel.value ? '✓' : ''}</span>
+    </button>`).join('');
 
-  // Eén keuze, dus de tik die kiest sluit ook — zelfde regel als een wiel met
-  // één kolom.
-  lijst.querySelectorAll('.sheet-option').forEach(rij => {
-    rij.addEventListener('click', () => {
+  menu.querySelectorAll('.choice-option').forEach(rij => {
+    rij.addEventListener('click', (e) => {
+      e.stopPropagation();
       const waarde = rij.dataset.waarde;
-      closeWheelSheet();
+      closeChoiceMenu();
       if (sel.value !== waarde) {
         sel.value = waarde;
         sel.dispatchEvent(new Event('change'));
@@ -1010,27 +1012,53 @@ function openChoiceSheet(id) {
     });
   });
 
-  document.getElementById('wheelSheetModal').classList.add('visible');
+  menu.classList.remove('naar-boven');
+  menu.classList.add('open');
+  veld.setAttribute('aria-expanded', 'true');
+  actiefKeuzeMenu = id;
+
+  // Past het menu niet onder de knop, dan klapt het omhoog uit. De beweging
+  // begint dan aan de onderkant, zodat hij nog steeds uit de knop lijkt te
+  // komen.
+  const ruimteOnder = window.innerHeight - veld.getBoundingClientRect().bottom;
+  if (menu.offsetHeight + 12 > ruimteOnder) menu.classList.add('naar-boven');
+
+  // Sluiten bij een klik ergens anders. De luisteraar gaat er pas ná de huidige
+  // klik op, anders vangt hij zijn eigen openingsklik — zelfde patroon als
+  // handleCancelClick() (huisstijl §8).
+  setTimeout(() => {
+    document.addEventListener('click', sluitKeuzeMenuBijKlik, { once: true });
+  }, 0);
+  document.addEventListener('keydown', sluitKeuzeMenuBijEscape);
 }
 
-let actiefKeuzeVeld = null;
+function sluitKeuzeMenuBijKlik() { closeChoiceMenu(); }
+function sluitKeuzeMenuBijEscape(e) { if (e.key === 'Escape') closeChoiceMenu(); }
 
-// Zet de bladwijzer terug in de wielstand.
-function resetSheetInhoud() {
-  document.getElementById('wheelSheetGroup').style.display = '';
-  document.getElementById('wheelSheetHint').style.display = '';
-  document.getElementById('wheelSheetActions').style.display = '';
-  const lijst = document.getElementById('wheelSheetList');
-  if (lijst) { lijst.style.display = 'none'; lijst.innerHTML = ''; }
+function closeChoiceMenu() {
+  document.removeEventListener('keydown', sluitKeuzeMenuBijEscape);
+  if (!actiefKeuzeMenu) return;
+  const cfg = CHOICE_FIELDS[actiefKeuzeMenu];
+  const menu = cfg && document.getElementById(cfg.menuId);
+  const veld = cfg && document.getElementById(cfg.fieldId);
+  actiefKeuzeMenu = null;
+  if (veld) veld.setAttribute('aria-expanded', 'false');
+  if (!menu) return;
+
+  // Dichtklappen met dezelfde beweging, andersom. Pas daarna weghalen.
+  menu.classList.add('sluit');
+  const opruimen = () => {
+    menu.classList.remove('open', 'sluit', 'naar-boven');
+    menu.innerHTML = '';
+  };
+  const t = setTimeout(opruimen, 160);
+  menu.addEventListener('animationend', () => { clearTimeout(t); opruimen(); }, { once: true });
 }
 
 function closeWheelSheet() {
   document.getElementById('wheelSheetModal').classList.remove('visible');
   if (actiefWielVeld) refreshWheelField(actiefWielVeld);
-  if (actiefKeuzeVeld) refreshChoiceField(actiefKeuzeVeld);
   actiefWielVeld = null;
-  actiefKeuzeVeld = null;
-  resetSheetInhoud();
 }
 
 // "Wissen" zet dit ene filter terug naar zijn beginstand en zoekt opnieuw.

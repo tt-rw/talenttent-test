@@ -241,9 +241,21 @@
     color: var(--muted);
     font-weight: 500;
     padding-left: var(--field-inset);
+    /* Vaste regelhoogte, zodat élk label even hoog is — ook een label met een
+       i-knop erin. Anders staat het veld onder dat label lager dan het veld
+       ernaast, en verschilt de witruimte per label. */
+    line-height: 16px;
   }
   /* Hulptekst onder een label, binnen dezelfde veldgroep. */
-  .field > p { padding-left: var(--field-inset); }
+  /* Hulptekst tussen label en veld: 8px eronder, gelijk aan de afstand
+     label → veld uit §3. Als regel, niet als inline marge. */
+  .field > p {
+    padding-left: var(--field-inset);
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    line-height: 1.35;
+  }
 
   /* Contrastfix 12-08-2026 (melding Ronald): randkleur en achtergrond van
      invulvelden weken bijna niet af van de paginakleur (#2a2a2a rand op
@@ -2251,7 +2263,7 @@
     width: 100%; box-sizing: border-box; display: flex; align-items: center;
     justify-content: space-between; gap: 8px;
     background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-field);
-    min-height: 48px; padding: 10px var(--field-inset); margin-top: 4px;
+    min-height: 48px; padding: 10px var(--field-inset); margin-top: 0;
     font-family: 'Roboto', sans-serif; font-size: 14px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
@@ -2844,6 +2856,10 @@
      en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
      sterk in lengte. */
   .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
+  /* Deze twee staan niet in een .field, dus de 8px tussen label en veld uit §3
+     kwam hier niet vanzelf. */
+  .filter-row-city .frc-plaats,
+  .filter-row-city .frc-straal { display: flex; flex-direction: column; gap: 8px; }
   .filter-row-city .frc-plaats { flex: 1 1 auto; min-width: 0; }
   .filter-row-city .frc-straal { flex: 0 0 auto; }
   .filter-row-city .frc-straal .wheel-field { min-width: 104px; }
@@ -2857,41 +2873,72 @@
     gap: 12px;
     margin-bottom: 20px;
   }
-  /* Het label bij Niveau draagt een i-knop en is daardoor hoger dan het label
-     bij Leeftijd. Zonder deze regel begint het ene veld 12px lager dan het
-     andere. De cellen zijn even hoog (grid), dus de velden onderaan uitlijnen
-     zet ze weer op één regel. */
-  .field-pair-row .field { min-width: 0; display: flex; flex-direction: column; }
-  .field-pair-row .field .wheel-field { margin-top: auto; }
+  .field-pair-row .field { min-width: 0; }
   /* Onder 360px past de rij niet meer naast elkaar. */
   @media (max-width: 359px) {
     .field-pair-row { grid-template-columns: 1fr; }
   }
 
-  /* ─── Lijst in de bladwijzer (TT-233) ────────────────────────────────────
-     Voor een korte, ongeordende keuze (Sorteren op, Weergave). Zelfde laag,
-     zelfde ronde hoeken en dezelfde opkomende beweging als het wiel. Een
-     browser-keuzelijst kon dat geen van beide. */
-  .sheet-list { display: flex; flex-direction: column; gap: 4px; }
-  .sheet-option {
+  /* ─── Keuzemenu onder zijn eigen knop (TT-233) ───────────────────────────
+     Voor een korte, ongeordende keuze (Sorteren op, Weergave). Het menu klapt
+     uit waar de gebruiker net getikt heeft, niet onder aan het scherm. Zelfde
+     vorm als .inline-menu-dropdown elders in de app, met een opengaande
+     beweging erbij. */
+  .menu-anchor { position: relative; }
+  .choice-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-field);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    z-index: 60;
+    transform-origin: top center;
+  }
+  .choice-menu.open { display: block; animation: choiceMenuOpen 0.16s cubic-bezier(0.2, 0.9, 0.3, 1); }
+  .choice-menu.sluit { animation: choiceMenuDicht 0.14s ease-in forwards; }
+  /* Geen ruimte onder de knop: dan omhoog, met de beweging vanaf de onderkant. */
+  .choice-menu.naar-boven {
+    top: auto;
+    bottom: calc(100% + 6px);
+    transform-origin: bottom center;
+  }
+  @keyframes choiceMenuOpen {
+    from { opacity: 0; transform: scaleY(0.85) translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes choiceMenuDicht {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: scaleY(0.9) translateY(-4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .choice-menu.open, .choice-menu.sluit { animation: none; }
+  }
+  .choice-option {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    min-height: 48px;
+    width: 100%;
+    min-height: 44px;
     padding: 0 var(--field-inset);
-    border-radius: var(--radius-field);
-    background: var(--surface2);
-    border: var(--line) solid transparent;
-    font-size: 16px;
+    background: transparent;
+    border: none;
     color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    text-align: left;
     cursor: pointer;
-    user-select: none;
-    transition: background 0.12s, border-color 0.12s;
+    transition: background 0.12s;
   }
-  .sheet-option:hover { border-color: var(--border); }
-  .sheet-option.selected { border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .sheet-option-check { color: var(--accent); font-size: 14px; }
+  .choice-option + .choice-option { border-top: 1px solid var(--border); }
+  .choice-option:hover { background: var(--surface2); }
+  .choice-option.selected { color: var(--accent); font-weight: 700; }
+  .choice-option-check { color: var(--accent); font-size: 14px; }
 
   /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
      In een knoppenrij maakt die marge de twee knoppen 8px ongelijk hoog —
@@ -2909,3 +2956,14 @@
     gap: 8px;
     padding-right: var(--field-inset);
   }
+  /* De i-knop staat óp de labelregel, niet gecentreerd over een hogere regel
+     (Ronald, 10-09-2026). Hij is daarom 16px — de regelhoogte van een label —
+     in plaats van de 24px die hij buiten een label heeft. Het tikvlak blijft
+     44×44px via het ::after-patroon uit §6. */
+  label .niveau-info-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    margin-left: 0;
+  }
+  label .niveau-info-btn::after { top: -14px; right: -14px; bottom: -14px; left: -14px; }

@@ -910,7 +910,7 @@
       <div class="field">
         <div class="filter-row-city">
           <div class="city-search-wrap frc-plaats">
-            <label style="display:block;margin-bottom:4px;">Plaats</label>
+            <label>Plaats</label>
             <input type="text" id="filterCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch(); scheduleSearchCityStatus('filterCity','filterCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterCityList'); runSearch(); })"
@@ -918,7 +918,7 @@
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
           <div class="frc-straal">
-            <label style="display:block;margin-bottom:4px;">Straal</label>
+            <label>Straal</label>
             <div class="wheel-field" id="filterRadiusField">
               <span class="wheel-field-label"></span>
               <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
@@ -973,7 +973,7 @@
       <div class="filter-row single">
         <div class="field">
           <label>Instrument</label>
-          <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
+          <p>Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
           <div class="picker-field" id="filterInstrumentsField">
             <span class="picker-field-label" id="filterInstrumentsFieldLabel">Instrument kiezen…</span>
             <span class="picker-field-chevron">▾</span>
@@ -1029,9 +1029,12 @@
            besturingssysteem, niet de pagina. -->
       <div class="field">
         <label>Sorteren op</label>
-        <div class="wheel-field" id="filterSortModeField" aria-label="Sorteren op">
-          <span class="wheel-field-label"></span>
-          <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="filterSortModeField" aria-label="Sorteren op">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="filterSortModeMenu" role="listbox" aria-label="Sorteren op"></div>
         </div>
         <select id="filterSortMode" style="display:none;" onchange="setSearchSortMode(this.value)">
           <option value="score">Beste match</option>
@@ -1041,9 +1044,12 @@
       </div>
       <div class="field">
         <label>Weergave</label>
-        <div class="wheel-field" id="musicianViewToggleField" aria-label="Weergave">
-          <span class="wheel-field-label"></span>
-          <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="musicianViewToggleField" aria-label="Weergave">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="musicianViewToggleMenu" role="listbox" aria-label="Weergave"></div>
         </div>
         <select id="musicianViewToggle" style="display:none;" onchange="setMusicianViewMode(this.value)">
           <option value="list">Lijst</option>
@@ -1072,7 +1078,7 @@
       <div class="field">
         <div style="display:flex;gap:8px;align-items:flex-start;">
           <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
-            <label style="display:block;margin-bottom:4px;">Plaats</label>
+            <label>Plaats</label>
             <input type="text" id="filterBandCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch(); scheduleSearchCityStatus('filterBandCity','filterBandCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterBandCityList'); runBandSearch(); })"
@@ -1080,7 +1086,7 @@
             <div class="autocomplete-list" id="acFilterBandCityList"></div>
           </div>
           <div style="flex-shrink:0;">
-            <label style="display:block;margin-bottom:4px;">Straal</label>
+            <label>Straal</label>
             <div class="radius-row">
               <input type="number" id="filterBandRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); runBandSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
@@ -1106,7 +1112,7 @@
       </div></div>
       <!-- TT-55-uitbreiding (12-08-2026): zelfde 1-instrument-beperking als
            het muzikanten-zoekfilter, nu ook hier doorgevoerd. -->
-      <div class="filter-row single band-instrument-filter"><div class="field"><label>Instrument gezocht</label><p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
+      <div class="filter-row single band-instrument-filter"><div class="field"><label>Instrument gezocht</label><p>Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
         <div class="picker-field" id="filterBandWantedField">
           <span class="picker-field-label" id="filterBandWantedFieldLabel">Instrument kiezen…</span>
           <span class="picker-field-chevron">▾</span>
@@ -1180,7 +1186,7 @@
       <div class="field">
         <div style="display:flex;gap:8px;align-items:flex-start;">
           <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
-            <label style="display:block;margin-bottom:4px;">Plaats</label>
+            <label>Plaats</label>
             <input type="text" id="filterSetlistCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch(); scheduleSearchCityStatus('filterSetlistCity','filterSetlistCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterSetlistCityList'); if(setlistWantedSongs.length) runSetlistSearch(); })"
@@ -1188,7 +1194,7 @@
             <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
           </div>
           <div style="flex-shrink:0;">
-            <label style="display:block;margin-bottom:4px;">Straal</label>
+            <label>Straal</label>
             <div class="radius-row">
               <input type="number" id="filterSetlistRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
@@ -1206,7 +1212,7 @@
       <div class="filter-row single">
         <div class="field">
           <label>Instrument</label>
-          <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
+          <p>Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
           <div class="picker-field" id="filterSetlistInstrumentsField">
             <span class="picker-field-label" id="filterSetlistInstrumentsFieldLabel">Instrument kiezen…</span>
             <span class="picker-field-chevron">▾</span>
@@ -1825,7 +1831,7 @@
     <div class="field" style="margin-bottom:16px;">
       <div style="display:flex;gap:8px;align-items:flex-start;">
         <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
-          <label style="display:block;margin-bottom:4px;">Plaats</label>
+          <label>Plaats</label>
           <input type="text" id="memberSearchCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
             oninput="onCitySearchInput(this.value,'acMemberSearchCityList'); searchMembersToAdd(document.getElementById('memberSearchInput').value); scheduleSearchCityStatus('memberSearchCity','memberSearchCityStatus');"
             onblur="setTimeout(()=>closeAC('acMemberSearchCityList'),200)">
@@ -1944,7 +1950,6 @@
       <button type="button" class="niveau-info-btn" id="wheelSheetInfo" style="display:none;" aria-label="Toelichting">i</button>
     </div>
     <div class="picker-group" id="wheelSheetGroup"></div>
-    <div class="sheet-list" id="wheelSheetList" style="display:none;"></div>
     <div class="wheel-hint" id="wheelSheetHint"></div>
     <div class="btn-row" id="wheelSheetActions">
       <button class="btn btn-ghost" onclick="wheelSheetClear()">Wissen</button>

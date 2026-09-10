@@ -86,6 +86,19 @@ doorgevoerde toepassing van de TT-114-schaal, nog niet app-breed:**
 **Knoppenrij-tussenruimte (TT-228, 09-09-2026):** `.action-row` ging van
 10px naar **8px**, gelijk aan `.btn-row`. 10px was geen veelvoud van 4.
 
+**Witruimte in een formulier — één maat per soort (TT-233, 10-09-2026):**
+- Label → veld: **8px**, overal. Komt uit `.field { gap: 8px }`. Een blok dat
+  geen `.field` is, krijgt die 8px expliciet — anders valt het buiten de regel.
+- Label → hulptekst → veld: ook **8px** per stap.
+- Tussen twee blokken: **20px** (§3 hierboven).
+- **Elk label is even hoog: `line-height: 16px`.** Een label met een i-knop
+  erin is dat óók. De knop staat óp de regel en is daarom binnen een label
+  **16×16px**, niet de 24px die hij daarbuiten heeft; het tikvlak blijft
+  44×44px via het `::after`-patroon uit §6. Zonder deze regel maakt de knop dat
+  ene label hoger, staat het veld eronder lager dan het veld ernaast, en
+  verschilt de witruimte per label.
+- Nooit een inline `style="margin-bottom:..."` op een veld of label.
+
 **Inspringing van tekst in een formulier (`--field-inset`, TT-233,
 10-09-2026):** elke tekstregel in een formulier begint op **8px** vanaf de
 linkerrand van het veld — gelijk aan `--radius-field`, dus precies waar de
@@ -279,10 +292,19 @@ de kolom.
 **Een browser-keuzelijst (`<select>`) wordt nooit zichtbaar gebruikt.** De
 uitklaplijst tekent het besturingssysteem, niet de pagina: hij is niet af te
 ronden en niet te animeren, en hij breekt daarmee het beeld van elk scherm
-waar hij op staat. Gebruik in plaats daarvan een lijst in de bladwijzer, met
-`--radius-field` per rij en de gekozen rij in `--accent` met een `✓`. Het
-`<select>` blijft verborgen in de HTML staan als bron van waarheid, zodat
-bestaande code die `.value` leest of zet ongewijzigd blijft werken.
+waar hij op staat. Het `<select>` blijft wél verborgen in de HTML staan als
+bron van waarheid, zodat bestaande code die `.value` leest of zet ongewijzigd
+blijft werken.
+
+**Een keuzemenu klapt uit onder de knop waar het bij hoort** (Ronald,
+10-09-2026), niet in een laag onder aan het scherm. Daar heeft de gebruiker net
+getikt en daar staan zijn ogen. Vorm: `.choice-menu` binnen een
+`.menu-anchor`, even breed als de knop, 6px eronder, `--radius-field`,
+`--surface` met een rand en een schaduw, rijen van 44px met de gekozen rij in
+`--accent` met een `✓`. De beweging begint aan de bovenkant van het menu
+(160 ms opengaan, 140 ms dicht), zodat het menu uit de knop lijkt te komen.
+Past het er niet onder, dan klapt het omhoog en begint de beweging aan de
+onderkant. Sluit bij een tik ernaast en bij Escape, volgens het patroon uit §8.
 
 **Het wiel staat nooit naast een ander wiel.** Een bladwijzer toont één wiel
 op volle schermbreedte. Twee wielen naast elkaar passen niet: op een scherm
