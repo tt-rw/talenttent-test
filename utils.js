@@ -843,6 +843,8 @@ function openWheelSheet(id) {
   const cfg = WHEEL_FIELDS[id];
   if (!cfg) return;
   actiefWielVeld = id;
+  actiefKeuzeVeld = null;
+  resetSheetInhoud();
   document.getElementById('wheelSheetTitle').textContent = cfg.title;
 
   const infoBtn = document.getElementById('wheelSheetInfo');
@@ -928,10 +930,107 @@ function koppelWielBereik(id) {
   setWheelValue(maxId, nieuw === undefined ? '' : nieuw, false);
 }
 
+// ─── Keuzeveld (TT-233, 10-09-2026) ──────────────────────────────────────────
+// Een korte, ongeordende lijst (Sorteren op, Weergave) hoort niet op een wiel —
+// huisstijl §7.1. Maar een browser-keuzelijst is niet af te ronden en niet te
+// animeren: die lijst tekent het besturingssysteem, niet de pagina. Daarom
+// dezelfde bladwijzer als het wiel, met een lijst erin.
+//
+// Het oorspronkelijke <select> blijft in de HTML staan, verborgen. Het is de
+// bron van waarheid, zodat alle bestaande code die .value leest of zet
+// ongewijzigd blijft werken.
+
+const CHOICE_FIELDS = {};
+
+// cfg: { id, fieldId, selectId, title }
+function initChoiceField(cfg) {
+  CHOICE_FIELDS[cfg.id] = cfg;
+  const el = document.getElementById(cfg.fieldId);
+  if (!el) return;
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.addEventListener('click', () => openChoiceSheet(cfg.id));
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openChoiceSheet(cfg.id); }
+  });
+  refreshChoiceField(cfg.id);
+}
+
+// Zet de tekst van het zichtbare veld gelijk aan de gekozen optie. Aanroepen na
+// elke keer dat andere code de waarde van het <select> zelf wijzigt.
+function refreshChoiceField(id) {
+  const cfg = CHOICE_FIELDS[id];
+  if (!cfg) return;
+  const sel = document.getElementById(cfg.selectId);
+  const el = document.getElementById(cfg.fieldId);
+  if (!sel || !el) return;
+  const optie = sel.options[sel.selectedIndex];
+  const labelEl = el.querySelector('.wheel-field-label');
+  if (labelEl) labelEl.textContent = optie ? optie.textContent : '';
+}
+
+function openChoiceSheet(id) {
+  const cfg = CHOICE_FIELDS[id];
+  if (!cfg) return;
+  const sel = document.getElementById(cfg.selectId);
+  if (!sel) return;
+  actiefWielVeld = null;
+  actiefKeuzeVeld = id;
+
+  document.getElementById('wheelSheetTitle').textContent = cfg.title;
+  const infoBtn = document.getElementById('wheelSheetInfo');
+  if (infoBtn) { infoBtn.style.display = 'none'; infoBtn.onclick = null; }
+
+  document.getElementById('wheelSheetGroup').style.display = 'none';
+  document.getElementById('wheelSheetHint').style.display = 'none';
+  document.getElementById('wheelSheetActions').style.display = 'none';
+
+  const lijst = document.getElementById('wheelSheetList');
+  lijst.style.display = '';
+  lijst.setAttribute('role', 'listbox');
+  lijst.innerHTML = [...sel.options].map(o => `
+    <div class="sheet-option${o.value === sel.value ? ' selected' : ''}" role="option"
+         aria-selected="${o.value === sel.value ? 'true' : 'false'}"
+         data-waarde="${escAttr(o.value)}">
+      <span>${escHtml(o.textContent)}</span>
+      <span class="sheet-option-check" aria-hidden="true">${o.value === sel.value ? '✓' : ''}</span>
+    </div>`).join('');
+
+  // Eén keuze, dus de tik die kiest sluit ook — zelfde regel als een wiel met
+  // één kolom.
+  lijst.querySelectorAll('.sheet-option').forEach(rij => {
+    rij.addEventListener('click', () => {
+      const waarde = rij.dataset.waarde;
+      closeWheelSheet();
+      if (sel.value !== waarde) {
+        sel.value = waarde;
+        sel.dispatchEvent(new Event('change'));
+      }
+      refreshChoiceField(id);
+    });
+  });
+
+  document.getElementById('wheelSheetModal').classList.add('visible');
+}
+
+let actiefKeuzeVeld = null;
+
+// Zet de bladwijzer terug in de wielstand.
+function resetSheetInhoud() {
+  document.getElementById('wheelSheetGroup').style.display = '';
+  document.getElementById('wheelSheetHint').style.display = '';
+  document.getElementById('wheelSheetActions').style.display = '';
+  const lijst = document.getElementById('wheelSheetList');
+  if (lijst) { lijst.style.display = 'none'; lijst.innerHTML = ''; }
+}
+
 function closeWheelSheet() {
   document.getElementById('wheelSheetModal').classList.remove('visible');
   if (actiefWielVeld) refreshWheelField(actiefWielVeld);
+  if (actiefKeuzeVeld) refreshChoiceField(actiefKeuzeVeld);
   actiefWielVeld = null;
+  actiefKeuzeVeld = null;
+  resetSheetInhoud();
 }
 
 // "Wissen" zet dit ene filter terug naar zijn beginstand en zoekt opnieuw.

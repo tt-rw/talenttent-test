@@ -1022,26 +1022,33 @@
          tekst, pijltje rechts. Blijft een keuzelijst en geen wiel: het zijn
          korte, ongeordende lijsten (huisstijl §7.1). -->
     <div id="sortBarMusician" class="field-pair-row">
+      <!-- Het <select> blijft staan, verborgen: het is de bron van waarheid voor
+           alle bestaande code die .value leest of zet. Het zichtbare veld opent
+           dezelfde bladwijzer als Leeftijd en Niveau. Een browser-keuzelijst is
+           niet af te ronden en niet te animeren — die tekent het
+           besturingssysteem, niet de pagina. -->
       <div class="field">
-        <label for="filterSortMode">Sorteren op</label>
-        <div class="select-field">
-          <select id="filterSortMode" onchange="setSearchSortMode(this.value)">
-            <option value="score">Beste match</option>
-            <option value="distance">Dichtstbijzijnde</option>
-            <option value="newest">Nieuwste</option>
-          </select>
-          <span class="select-field-chevron" aria-hidden="true">&#9662;</span>
+        <label>Sorteren op</label>
+        <div class="wheel-field" id="filterSortModeField" aria-label="Sorteren op">
+          <span class="wheel-field-label"></span>
+          <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
         </div>
+        <select id="filterSortMode" style="display:none;" onchange="setSearchSortMode(this.value)">
+          <option value="score">Beste match</option>
+          <option value="distance">Dichtstbijzijnde</option>
+          <option value="newest">Nieuwste</option>
+        </select>
       </div>
       <div class="field">
-        <label for="musicianViewToggle">Weergave</label>
-        <div class="select-field">
-          <select id="musicianViewToggle" onchange="setMusicianViewMode(this.value)">
-            <option value="list">Lijst</option>
-            <option value="grid">Kaarten</option>
-          </select>
-          <span class="select-field-chevron" aria-hidden="true">&#9662;</span>
+        <label>Weergave</label>
+        <div class="wheel-field" id="musicianViewToggleField" aria-label="Weergave">
+          <span class="wheel-field-label"></span>
+          <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
         </div>
+        <select id="musicianViewToggle" style="display:none;" onchange="setMusicianViewMode(this.value)">
+          <option value="list">Lijst</option>
+          <option value="grid">Kaarten</option>
+        </select>
       </div>
     </div>
 
@@ -1937,8 +1944,9 @@
       <button type="button" class="niveau-info-btn" id="wheelSheetInfo" style="display:none;" aria-label="Toelichting">i</button>
     </div>
     <div class="picker-group" id="wheelSheetGroup"></div>
+    <div class="sheet-list" id="wheelSheetList" style="display:none;"></div>
     <div class="wheel-hint" id="wheelSheetHint"></div>
-    <div class="btn-row">
+    <div class="btn-row" id="wheelSheetActions">
       <button class="btn btn-ghost" onclick="wheelSheetClear()">Wissen</button>
       <button class="btn btn-primary" onclick="closeWheelSheet()">Gereed</button>
     </div>

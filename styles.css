@@ -224,17 +224,19 @@
      terwijl de tekst in het veld eronder 12px inspringt — de breedte van de
      ronde hoek. Daardoor liep geen enkele tekstregel op één lijn. Label en
      hulptekst springen nu evenveel in als de tekst in het veld.
-     Geldt app-breed; --radius is 12px. */
+     Geldt app-breed. 16px is de opvulling die de invoervelden al hadden;
+     alle andere veldtypen volgen die maat nu, zodat elke tekstregel in een
+     formulier op dezelfde x begint. */
   label {
     font-size: 11px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 500;
-    padding-left: var(--radius);
+    padding-left: 16px;
   }
   /* Hulptekst onder een label, binnen dezelfde veldgroep. */
-  .field > p { padding-left: var(--radius); }
+  .field > p { padding-left: 16px; }
 
   /* Contrastfix 12-08-2026 (melding Ronald): randkleur en achtergrond van
      invulvelden weken bijna niet af van de paginakleur (#2a2a2a rand op
@@ -2235,7 +2237,7 @@
     width: 100%; box-sizing: border-box; display: flex; align-items: center;
     justify-content: space-between; gap: 8px;
     background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    min-height: 48px; padding: 10px 14px; margin-top: 4px;
+    min-height: 48px; padding: 10px 16px; margin-top: 4px;
     font-family: 'Roboto', sans-serif; font-size: 14px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
@@ -2746,11 +2748,11 @@
     align-items: center;
     justify-content: center;   /* de waarde staat gecentreerd, huisstijl §7.2 */
     min-height: 44px;
-    /* Beperkte opvulling met reden: op een scherm van 360px is dit veld 133px
-       breed. De langste stand, "22 - 40 jaar", heeft 85px nodig. Bij 26px
-       opvulling links en rechts werd die tekst afgekapt. Het pijltje staat er
-       los overheen, dus het kost geen breedte. */
-    padding: 0 12px;
+    /* 16px, gelijk aan elk ander veld in het formulier. Op een scherm van
+       360px blijft er dan 101px over voor de tekst; de langste stand,
+       "22 - 40 jaar", heeft er 81 nodig. Het pijltje staat er los overheen en
+       kost geen breedte. */
+    padding: 0 16px;
     background: var(--surface2);
     border: var(--line) solid var(--border);
     border-radius: var(--radius);
@@ -2846,44 +2848,36 @@
      andere. De cellen zijn even hoog (grid), dus de velden onderaan uitlijnen
      zet ze weer op één regel. */
   .field-pair-row .field { min-width: 0; display: flex; flex-direction: column; }
-  .field-pair-row .field .wheel-field,
-  .field-pair-row .field .select-field { margin-top: auto; }
+  .field-pair-row .field .wheel-field { margin-top: auto; }
   /* Onder 360px past de rij niet meer naast elkaar. */
   @media (max-width: 359px) {
     .field-pair-row { grid-template-columns: 1fr; }
   }
 
-  /* ─── Keuzelijst in de vorm van een wielveld (TT-233) ─────────────────────
-     Sorteren en Weergave zijn geen wiel — het zijn korte, ongeordende lijsten,
-     en die horen bij een keuzelijst (huisstijl §7.1). Ze krijgen wél exact het
-     uiterlijk van Leeftijd en Niveau, zodat de rij eronder niet als een ander
-     soort scherm leest. */
-  .select-field { position: relative; }
-  .select-field select {
-    height: 44px;
-    padding: 0 26px;
+  /* ─── Lijst in de bladwijzer (TT-233) ────────────────────────────────────
+     Voor een korte, ongeordende keuze (Sorteren op, Weergave). Zelfde laag,
+     zelfde ronde hoeken en dezelfde opkomende beweging als het wiel. Een
+     browser-keuzelijst kon dat geen van beide. */
+  .sheet-list { display: flex; flex-direction: column; gap: 4px; }
+  .sheet-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 8px;
     background: var(--surface2);
-    border: var(--line) solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text);
+    border: var(--line) solid transparent;
     font-size: 16px;
-    text-align: center;
-    text-align-last: center;
+    color: var(--text);
     cursor: pointer;
+    user-select: none;
+    transition: background 0.12s, border-color 0.12s;
   }
-  .select-field select:focus {
-    border-color: var(--accent);
-    box-shadow: none;
-  }
-  .select-field-chevron {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--muted);
-    font-size: 12px;
-    pointer-events: none;
-  }
+  .sheet-option:hover { border-color: var(--border); }
+  .sheet-option.selected { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .sheet-option-check { color: var(--accent); font-size: 14px; }
 
   /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
      In een knoppenrij maakt die marge de twee knoppen 8px ongelijk hoog —

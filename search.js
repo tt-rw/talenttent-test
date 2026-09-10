@@ -98,6 +98,7 @@ function setMusicianViewMode(mode) {
   try { localStorage.setItem('tt_musicianViewMode', mode); } catch(e) {}
   const sel = document.getElementById('musicianViewToggle');
   if (sel) sel.value = mode;
+  refreshChoiceField('weergave');
   if (lastMusicianResults.length) renderCappedMusicianResults();
 }
 // Afstand per muzikant-id, gevuld door zoekresultaten (gewoon zoeken en setlist-
@@ -202,6 +203,7 @@ function setSearchSortMode(mode) {
   if (mode === 'distance' && lastMusicianResults.length && !lastMusicianResults.some(m => m.distance_km != null)) {
     showToast('Vul een plaats in bij de zoekfilters om op afstand te sorteren.');
     document.getElementById('filterSortMode').value = searchSortMode;
+    refreshChoiceField('sorteren');
     return;
   }
   searchSortMode = mode;
@@ -295,6 +297,12 @@ function initSearchFilters() {
     hint:   (v) => niveauBereikTekst(v[0], v[1]),
     onChange: runSearch
   });
+
+  // Sorteren en Weergave: geen wiel maar een lijst, in dezelfde bladwijzer.
+  initChoiceField({ id: 'sorteren', fieldId: 'filterSortModeField',
+                    selectId: 'filterSortMode', title: 'Sorteren op' });
+  initChoiceField({ id: 'weergave', fieldId: 'musicianViewToggleField',
+                    selectId: 'musicianViewToggle', title: 'Weergave' });
 }
 
 // De naam van een niveau, uit dezelfde tabel als de i-knop toont
@@ -392,6 +400,7 @@ function resetMusicianSearch() {
   renderPickerBadges(PICKERS.filterInstruments);
   renderPickerBadges(PICKERS.filterGenres);
   selectSortModeByValue('filterSortMode', 'score');
+  refreshChoiceField('sorteren');
   // TT-10: niet leeg laten staan — meteen opnieuw zoeken zonder filters,
   // consistent met "bij openen/wisselen van tabblad altijd een resultaat".
   runSearch();
