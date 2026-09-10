@@ -54,7 +54,7 @@ const WHEEL_NIVEAU  = ['', 1, 2, 3, 4, 5];
 // 500 km vroegen een lange scrollbeweging voor een keuze die in de praktijk
 // tussen 10 en 50 km ligt. Nederland is ongeveer 300 km lang.
 const WHEEL_RADIUS  = [5, 10, 15, 25, 50, 75, 100, 150, 250, 500];
-const STRAAL_STANDAARD = 25;
+const STRAAL_STANDAARD = 5;   // beginstand van het straalwiel (Ronald, 10-09-2026)
 
 function rangeStep(from, to, step) {
   const out = [];
@@ -281,6 +281,10 @@ function initSearchFilters() {
     title: 'Niveau',
     sep: 't/m',
     koppelBereik: true,
+    // Niveau begint bij 1. "Geen t/m 2" bestaat dus niet: kiest iemand een
+    // bovengrens terwijl de ondergrens op Geen staat, dan wordt die 1.
+    // (Ronald, 10-09-2026)
+    ondergrensVerplicht: true,
     infoActie: openMusicianNiveauInfoModal,
     columns: [
       { inputId: 'filterNiveauMin', values: WHEEL_NIVEAU, ariaLabel: 'Niveau vanaf' },
@@ -306,12 +310,16 @@ function niveauNaam(n) {
 
 // Leest een gekozen bereik terug in woorden. De korte vorm staat in het
 // gesloten veld, de lange vorm op de terugleesregel in de bladwijzer.
+// In het gesloten veld staat een streepje tussen de grenzen: "22 - 40 jaar"
+// (Ronald, 10-09-2026). Korter dan "t/m", en het veld is maar een halve regel
+// breed. In het wiel en op de terugleesregel blijft "t/m" staan — daar is
+// ruimte en leest het woord duidelijker.
 function leeftijdKort(min, max) {
   if (min === '' && max === '') return 'Geen';
-  if (min !== '' && max === '') return `${min}+`;
-  if (min === '' && max !== '') return `t/m ${max}`;
+  if (min !== '' && max === '') return `${min}+ jaar`;
+  if (min === '' && max !== '') return `t/m ${max} jaar`;
   if (min === max) return `${min} jaar`;
-  return `${min} t/m ${max}`;
+  return `${min} - ${max} jaar`;
 }
 
 function leeftijdBereikTekst(min, max) {
@@ -325,16 +333,14 @@ function leeftijdBereikTekst(min, max) {
 function niveauKort(min, max) {
   if (min === '' && max === '') return 'Geen';
   if (min !== '' && max === '') return `${min}+`;
-  if (min === '' && max !== '') return `t/m ${max}`;
   if (min === max) return `Alleen ${min}`;
-  return `${min} t/m ${max}`;
+  return `${min} - ${max}`;
 }
 
 function niveauBereikTekst(min, max) {
   const naam = (n) => { const t = niveauNaam(n); return t ? ` — ${t}` : ''; };
   if (min === '' && max === '') return 'Alle niveaus';
   if (min !== '' && max === '') return `Niveau ${min} en hoger${naam(min)}`;
-  if (min === '' && max !== '') return `Niveau ${max} en lager${naam(max)}`;
   if (min === max) return `Alleen niveau ${min}${naam(min)}`;
   return `Niveau ${min} t/m ${max} — ${niveauNaam(min)} t/m ${niveauNaam(max)}`;
 }

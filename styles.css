@@ -220,13 +220,21 @@
     gap: 8px;
   }
 
+  /* TT-233 (10-09-2026, Ronald): een label stond tegen de rand van de kolom,
+     terwijl de tekst in het veld eronder 12px inspringt — de breedte van de
+     ronde hoek. Daardoor liep geen enkele tekstregel op één lijn. Label en
+     hulptekst springen nu evenveel in als de tekst in het veld.
+     Geldt app-breed; --radius is 12px. */
   label {
     font-size: 11px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 500;
+    padding-left: var(--radius);
   }
+  /* Hulptekst onder een label, binnen dezelfde veldgroep. */
+  .field > p { padding-left: var(--radius); }
 
   /* Contrastfix 12-08-2026 (melding Ronald): randkleur en achtergrond van
      invulvelden weken bijna niet af van de paginakleur (#2a2a2a rand op
@@ -2738,7 +2746,11 @@
     align-items: center;
     justify-content: center;   /* de waarde staat gecentreerd, huisstijl §7.2 */
     min-height: 44px;
-    padding: 0 26px;
+    /* Beperkte opvulling met reden: op een scherm van 360px is dit veld 133px
+       breed. De langste stand, "22 - 40 jaar", heeft 85px nodig. Bij 26px
+       opvulling links en rechts werd die tekst afgekapt. Het pijltje staat er
+       los overheen, dus het kost geen breedte. */
+    padding: 0 12px;
     background: var(--surface2);
     border: var(--line) solid var(--border);
     border-radius: var(--radius);
@@ -2751,10 +2763,10 @@
   .wheel-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Gouden rand zodra dit filter aanstaat — in één blik te zien wat er leeft. */
   .wheel-field.is-set { border-color: var(--accent); }
-  .wheel-field-label { overflow: hidden; text-overflow: ellipsis; }
+  .wheel-field-label { overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 12px); }
   .wheel-field-chevron {
     position: absolute;
-    right: 10px;
+    right: 6px;
     color: var(--muted);
     font-size: 12px;
     pointer-events: none;
@@ -2820,9 +2832,10 @@
   .filter-row-city .frc-straal { flex: 0 0 auto; }
   .filter-row-city .frc-straal .wheel-field { min-width: 104px; }
 
-  /* Leeftijd en Niveau naast elkaar: twee exact gelijke kolommen. Zelfde
-     principe als een knoppenrij (§5) — 1fr is altijd even breed. */
-  .wheel-filter-row {
+  /* Twee velden naast elkaar: exact gelijke kolommen. Zelfde principe als een
+     knoppenrij (§5) — 1fr is altijd even breed. Gebruikt voor Leeftijd/Niveau
+     én voor Sorteren/Weergave. */
+  .field-pair-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
@@ -2832,11 +2845,44 @@
      bij Leeftijd. Zonder deze regel begint het ene veld 12px lager dan het
      andere. De cellen zijn even hoog (grid), dus de velden onderaan uitlijnen
      zet ze weer op één regel. */
-  .wheel-filter-row .field { min-width: 0; display: flex; flex-direction: column; }
-  .wheel-filter-row .field .wheel-field { margin-top: auto; }
+  .field-pair-row .field { min-width: 0; display: flex; flex-direction: column; }
+  .field-pair-row .field .wheel-field,
+  .field-pair-row .field .select-field { margin-top: auto; }
   /* Onder 360px past de rij niet meer naast elkaar. */
   @media (max-width: 359px) {
-    .wheel-filter-row { grid-template-columns: 1fr; }
+    .field-pair-row { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Keuzelijst in de vorm van een wielveld (TT-233) ─────────────────────
+     Sorteren en Weergave zijn geen wiel — het zijn korte, ongeordende lijsten,
+     en die horen bij een keuzelijst (huisstijl §7.1). Ze krijgen wél exact het
+     uiterlijk van Leeftijd en Niveau, zodat de rij eronder niet als een ander
+     soort scherm leest. */
+  .select-field { position: relative; }
+  .select-field select {
+    height: 44px;
+    padding: 0 26px;
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 16px;
+    text-align: center;
+    text-align-last: center;
+    cursor: pointer;
+  }
+  .select-field select:focus {
+    border-color: var(--accent);
+    box-shadow: none;
+  }
+  .select-field-chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 12px;
+    pointer-events: none;
   }
 
   /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.

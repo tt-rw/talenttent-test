@@ -776,7 +776,8 @@ let actiefWielVeld = null;
 //   sep?: 't/m', unit?: 'km',
 //   value: [beginwaarde per kolom],
 //   clearTo?: [waarde per kolom bij "Wissen"],
-//   koppelBereik?: true   -> kolom 2 mag niet onder kolom 1 zakken
+//   koppelBereik?: true        -> kolom 2 mag niet onder kolom 1 zakken
+//   ondergrensVerplicht?: true -> kolom 1 mag niet op "Geen" staan als kolom 2 gevuld is
 //   format(waarden) -> tekst in het gesloten veld
 //   hint(waarden)   -> terugleesregel onder het wiel
 //   onChange()      -> na elke wijziging
@@ -909,8 +910,19 @@ function koppelWielBereik(id) {
   const minId = wheelColumnId(id, 0);
   const maxId = wheelColumnId(id, 1);
   if (!WHEELS[minId] || !WHEELS[maxId]) return;
-  const min = getWheelValue(minId);
+  let min = getWheelValue(minId);
   const max = getWheelValue(maxId);
+
+  // Een bovengrens zonder ondergrens leest als een halve zin. Bij een schaal
+  // die bij een vaste waarde begint (niveau 1) vult de ondergrens zichzelf.
+  if (cfg.ondergrensVerplicht && max !== '' && min === '') {
+    const eerste = WHEELS[minId].values.find(v => v !== '');
+    if (eerste !== undefined) {
+      setWheelValue(minId, eerste, false);
+      min = eerste;
+    }
+  }
+
   if (min === '' || max === '' || Number(min) <= Number(max)) return;
   const nieuw = WHEELS[maxId].values.find(v => v !== '' && Number(v) >= Number(min));
   setWheelValue(maxId, nieuw === undefined ? '' : nieuw, false);
