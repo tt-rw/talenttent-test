@@ -1022,11 +1022,16 @@
   .media-tab.active { background: var(--surface); color: var(--text); }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
-  /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist) */
+  /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist).
+     TT-233 (10-09-2026, Ronald): boven en onder de knoppenrij stond 32px en
+     28px, en de zoekwikkel legde daar nog eens 48px bovenop. Dat gaf een lege
+     band tussen de knoppen en het filterpaneel. Nu boven en onder dezelfde
+     20px — de standaardafstand tussen twee blokken uit §3. Geldt voor alle
+     drie de zoekmodi, want deze rij staat er maar één keer. */
   .search-mode-tabs-outer {
     display: flex;
     justify-content: center;
-    padding: 32px 24px 28px;
+    padding: 20px 24px;
   }
   .search-mode-tabs {
     display: flex;
@@ -1631,7 +1636,9 @@
   .search-wrap {
     width: 100%;
     margin: 0 auto;
-    padding: 48px 24px 80px;
+    /* Geen eigen ruimte bovenaan: de knoppenrij erboven levert die al. Twee
+       blokken die allebei hun eigen marge meebrengen, tellen op. */
+    padding: 0 24px 80px;
   }
 
   /* Standaard witruimte tussen twee blokken in het filterpaneel: 20px, zoals
@@ -2390,7 +2397,11 @@
        blijft ongewijzigd, alleen het icoon zelf wordt groter getekend). */
     #navMenuBtn svg { width: 26px; height: 26px; }
     .nav-menu-dropdown { right: 16px; top: -18px; }
-    .search-wrap, .my-profile-wrap { padding: 32px 16px 60px; }
+    /* TT-233: geen eigen ruimte bovenaan bij Zoeken — de knoppenrij erboven
+       levert die al (20px). Mijn Profiel heeft geen knoppenrij en houdt zijn
+       32px. */
+    .search-wrap { padding: 0 16px 60px; }
+    .my-profile-wrap { padding: 32px 16px 60px; }
     /* TT-130 (23-08-2026): op de telefoon scrolden de gespreksnaam en het
        invoerveld gewoon mee met de berichtenlijst — bij een langer gesprek,
        of zodra het toetsenbord opkomt, verdwenen beide. Geen enkele
