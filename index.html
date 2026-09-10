@@ -907,7 +907,7 @@
       <!-- TT-233 (10-09-2026): Plaats en Straal op één regel, via .filter-row-city
            i.p.v. inline stijlen. Straal is een wielveld: 104px vast, groeit niet
            mee met Plaats. Huisstijl §7.2. -->
-      <div class="field" style="margin-bottom:16px;">
+      <div class="field">
         <div class="filter-row-city">
           <div class="city-search-wrap frc-plaats">
             <label style="display:block;margin-bottom:4px;">Plaats</label>
@@ -970,7 +970,7 @@
            dit is nu een harde filter op het bestaande veld
            musician_instruments, met sortering op de bestaande genre-score
            daarbinnen. -->
-      <div class="filter-row single" style="margin-bottom:16px;">
+      <div class="filter-row single">
         <div class="field">
           <label>Instrument</label>
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
@@ -989,7 +989,7 @@
            TT-232 (09-09-2026): staat nu als draaiwiel bovenaan, naast
            Leeftijd. De werking van het filter zelf is niet gewijzigd. -->
 
-      <div class="filter-row single" style="margin-bottom:16px;">
+      <div class="filter-row single">
         <div class="field">
           <label>Genre</label>
           <div class="picker-field" id="filterGenresField">
@@ -1069,7 +1069,7 @@
            Plaats+Straal-rij als bij Muzikanten-zoeken, zie de toelichting
            daar. Straal stond hier ook voorheen verstopt achter "Meer
            filters" — nu altijd zichtbaar naast Plaats. -->
-      <div class="field" style="margin-bottom:16px;">
+      <div class="field">
         <div style="display:flex;gap:8px;align-items:flex-start;">
           <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
             <label style="display:block;margin-bottom:4px;">Plaats</label>
@@ -1097,7 +1097,7 @@
       <div class="filter-row single">
         <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
       </div>
-      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label>
+      <div class="filter-row single"><div class="field"><label>Genre</label>
         <div class="picker-field" id="filterBandGenresField">
           <span class="picker-field-label" id="filterBandGenresFieldLabel">Genre kiezen…</span>
           <span class="picker-field-chevron">▾</span>
@@ -1106,7 +1106,7 @@
       </div></div>
       <!-- TT-55-uitbreiding (12-08-2026): zelfde 1-instrument-beperking als
            het muzikanten-zoekfilter, nu ook hier doorgevoerd. -->
-      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
+      <div class="filter-row single band-instrument-filter"><div class="field"><label>Instrument gezocht</label><p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
         <div class="picker-field" id="filterBandWantedField">
           <span class="picker-field-label" id="filterBandWantedFieldLabel">Instrument kiezen…</span>
           <span class="picker-field-chevron">▾</span>
@@ -1115,7 +1115,7 @@
       </div></div>
       <!-- TT-51: niveau van de band zelf (Tabel 1), los van het niveau per
            instrument bij muzikanten. Bereik, aaneengesloten. -->
-      <div class="filter-row single" style="margin-bottom:16px;">
+      <div class="filter-row single">
         <div class="field">
           <!-- V-21 (13-08-2026): band-schaal heet nu "ervaring", niet meer
                "niveau" (dat woord blijft voorbehouden aan de instrumentschaal). -->
@@ -1177,7 +1177,7 @@
            Plaats en Straal al naast elkaar op een breder scherm (twee
            velden in dezelfde .filter-row) — alleen de mobiele weergave
            stapelde ze alsnog onder elkaar. Dat is nu ook op mobiel opgelost. -->
-      <div class="field" style="margin-bottom:16px;">
+      <div class="field">
         <div style="display:flex;gap:8px;align-items:flex-start;">
           <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
             <label style="display:block;margin-bottom:4px;">Plaats</label>
@@ -1203,7 +1203,7 @@
            patroon als bij Muzikanten en Bands (TT-55) — maximaal 1
            instrument, Zang als losse uitzondering die niet meetelt voor
            die limiet. -->
-      <div class="filter-row single" style="margin-bottom:16px;">
+      <div class="filter-row single">
         <div class="field">
           <label>Instrument</label>
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>

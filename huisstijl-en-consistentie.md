@@ -86,6 +86,14 @@ doorgevoerde toepassing van de TT-114-schaal, nog niet app-breed:**
 **Knoppenrij-tussenruimte (TT-228, 09-09-2026):** `.action-row` ging van
 10px naar **8px**, gelijk aan `.btn-row`. 10px was geen veelvoud van 4.
 
+**Inspringing van tekst in een formulier (`--field-inset`, TT-233,
+10-09-2026):** elke tekstregel in een formulier begint op **8px** vanaf de
+linkerrand van het veld — gelijk aan `--radius-field`, dus precies waar de
+ronding overgaat in de rechte rand. Dat geldt voor het label, de hulptekst
+eronder én de tekst in het veld zelf. Elk veldtype had hiervoor zijn eigen
+maat (invoerveld 16px, keuzeveld 14px, label 0px), waardoor geen enkele regel
+uitlijnde. Gebruik altijd `var(--field-inset)`, nooit een los getal.
+
 **Open punt, nog niet vastgelegd:** `.panel-title` is standaard 6px
 margin-bottom. Volgt er geen `.panel-sub`, dan gebruiken "Over ons" en
 "Instellingen" een inline 20px — maar "Privacyverklaring",
@@ -103,10 +111,16 @@ gebruikspatroon:
 | Element | Waarde |
 |---|---|
 | Kaarten/panelen (`--radius`) | 12px |
+| **Velden (`--radius-field`)** | **8px** |
 | Knoppen (`.btn`) | 8px |
 | Modals (`.modal-box`) | 16px (0 op mobiel, volledig scherm) |
 | Badges/chips/pillen | 20px of `999px` (volledig rond) |
 | Ronde iconen/avatars | `50%` |
+
+**`--radius-field` geldt voor élk veld** (TT-233, 10-09-2026): invoerveld,
+keuzeveld, wielveld en lijstoptie in een bladwijzer. Eén variabele, zodat twee
+velden naast elkaar nooit een andere ronding krijgen. Nooit een losse waarde
+in een regel zetten.
 
 ---
 
@@ -202,6 +216,7 @@ tikveld en pil.
 |---|---|
 | Getal of niveau uit een **vaste, geordende reeks** (straal, leeftijd, niveau, frequentie) | **Wiel-keuze** |
 | Keuze uit een **ongeordende lijst** waar je op zoekt (instrument, genre, plaats) | Tikveld + keuzelijst met zoekveld |
+| Korte, ongeordende lijst zonder zoekveld (Sorteren op, Weergave) | **Lijst in dezelfde bladwijzer** |
 | Aan/uit, of maximaal drie standen | Chip of pil, direct op het scherm |
 | Vrij getal zonder zinnige stappen | Bestaat niet in deze app — kies stappen |
 
@@ -260,6 +275,14 @@ breedte. Reden: de meeste gebruikers bedienen de app met hun rechterduim, en
 kolommen tegen de linkerrand dwingen tot het verleggen van de telefoon. De
 markeringsbalk loopt wél over de volle breedte — die markeert de regel, niet
 de kolom.
+
+**Een browser-keuzelijst (`<select>`) wordt nooit zichtbaar gebruikt.** De
+uitklaplijst tekent het besturingssysteem, niet de pagina: hij is niet af te
+ronden en niet te animeren, en hij breekt daarmee het beeld van elk scherm
+waar hij op staat. Gebruik in plaats daarvan een lijst in de bladwijzer, met
+`--radius-field` per rij en de gekozen rij in `--accent` met een `✓`. Het
+`<select>` blijft verborgen in de HTML staan als bron van waarheid, zodat
+bestaande code die `.value` leest of zet ongewijzigd blijft werken.
 
 **Het wiel staat nooit naast een ander wiel.** Een bladwijzer toont één wiel
 op volle schermbreedte. Twee wielen naast elkaar passen niet: op een scherm
@@ -327,6 +350,12 @@ Bewuste afwijking, alleen voor de wiel-keuze.
   plek met dezelfde uitleg maakt het scherm alleen langer.
 - De balk **Muzikant · Band · Setlist** blijft ongewijzigd bovenaan het
   zoekscherm, boven de filtertitel.
+- Een **i-knop in een label** staat rechts in de labelregel, op één lijn met
+  de rechterrand van de tekst in het veld eronder — niet direct achter het
+  woord. Patroon: `.label-with-info` met `justify-content: space-between` en
+  `padding-right: var(--field-inset)`.
+- Tussen twee blokken in het filterpaneel staat **20px**, de standaardmaat uit
+  §3. Nooit een inline `style="margin-bottom:..."` op een blok apart.
 
 ---
 
