@@ -86,11 +86,24 @@ van de algemene invoerveldregel, die specifieker is. Nu
 3. **Het bannerteken staat nu vóór de tellertekst**, in de gouden stand en op
    teksthoogte (`1.2em`), zodat zichtbaar is welk teken je zoekt.
 
-**Testset uitgebreid met blok 13:** 33 controles over de rijvorm, het
+**TT-264 dezelfde dag gevonden en opgelost (P1).** Ronald na het testen: *"als
+ik een video inline afspeel en ik druk op de terugknop van de browser, dan ga ik
+terug naar het profiel. Het nummer blijft doorspelen, maar ik zie geen scherm
+meer en ik kan het ook niet meer oproepen."* **Geverifieerd in `core.js`:** elke
+generieke sluitweg haalde alleen de klasse `visible` weg en riep geen
+sluitfunctie aan. Het kader bleef dus in de pagina staan — onzichtbaar, maar
+spelend. **Opgelost in de standaard, niet in het mediascherm:** een modal die
+opruimwerk heeft, geeft zijn sluitfunctie op in `data-close` op de overlay;
+`sluitModal()` in `core.js` roept die aan. Gebruikt door de terugknop, door
+Escape (nieuw, app-breed) en bij een wissel van view. Een modal zonder
+`data-close` sluit precies zoals voorheen — getoetst. **Toets P1:** geluid dat
+doorspeelt zonder knop om het te stoppen is een reden om de app weg te doen.
+
+**Testset uitgebreid met blok 13:** 38 controles over de rijvorm, het
 bannerteken (plek, tikvlak, aan/uit), de teller, de grens van zes, het
 wegschrijven van `in_banner`, het afkappen van de naam en het mediascherm
 (cookieloze variant, modalstapeling, sluiten stopt het afspelen, uitleg bij een
-platform zonder speler). **Eindstand: 129 van 129 geslaagd.**
+platform zonder speler). **Eindstand: 134 van 134 geslaagd.**
 
 **Correctie op een eerder vastgelegd plan (§2.13).** TT-262 beschreef de
 huisstijl-check als "blok 13 van de vaste testset". Dat nummer is vandaag
@@ -104,7 +117,7 @@ wordt alleen de keuze gemaakt en bewaard. En `huisstijl-en-consistentie.md`
 heeft nog geen paragraaf over het bannerteken, de media-rij en het
 mediascherm — zie het openstaande punt onderaan deze update.
 
-Gewijzigd: `utils.js`, `wizard.js`, `musicians.js`, `styles.css`,
+Gewijzigd: `utils.js`, `wizard.js`, `musicians.js`, `styles.css`, `core.js`,
 `index.html` (tellerregel in twee schermen, het mediascherm,
 versieachtervoegsels), `tests/tt_tests.py`, `actielijst.md`.
 
@@ -2877,6 +2890,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-264** | Een video speelde door na de terugknop | **Opgelost 13-09-2026.** De terugknop, Escape en een wissel van view haalden alleen de klasse `visible` van een modal af; het kader bleef spelen in een onzichtbaar scherm dat niet meer op te roepen was. Opgelost in de standaard: `data-close` op de overlay plus `sluitModal()` in `core.js`. Zie Deel 3 |
 | **TT-11** | "Ik wil meedoen" bij bands | **Ontwerprichting bepaald 08-08-2026** — geen ja/nee-mechaniek, zie toelichting onder deze tabel. Eigen sessie, niet samen met TT-06 |
 | **TT-13** | Terugkeerredenen | Profielweergaven, wekelijkse mail. **Samengevoegd 09-08-2026** met wat eerder los als "Volgen/ontvolgen" bij de Toekomstvisie stond — zelfde onderwerp, stond dubbel. **Uitgesplitst 06-09-2026: volgen/ontvolgen + het activiteitenoverzicht heeft nu een eigen ticket, TT-221** (zie bovenaan dit document) — was hier alleen als één-regel-richting vastgelegd (25-08-2026, "Connections"-blokje), Ronald leverde de volledige uitwerking aan |
 | **TT-49** | Optredenlijst (band, datum, plaats) | Belangrijkste onderdeel van het profiel-als-product: levert ervaringsmaat, materiaal voor succesverhalen én later het aanknopingspunt voor podia. De "verleden"-kolom van TT-48 (voortgangspaneel) leunt hierop en toont tot dan een placeholder |

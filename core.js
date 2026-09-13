@@ -765,6 +765,7 @@ function safeHistoryReplace(stateObj, hash) {
 
 function showView(view, mode) {
   closeNavMenu();
+  sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.bottom-nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
@@ -943,10 +944,42 @@ window.addEventListener('resize', () => {
   naamHermeetTimer = setTimeout(() => fitProfileName(document), 150);
 });
 
+// TT-264 (13-09-2026, Ronald): "als ik een video inline afspeel en ik druk op
+// de terugknop van de browser, dan ga ik terug naar het profiel. Het nummer
+// blijft doorspelen, maar ik zie geen scherm meer."
+// Oorzaak, geverifieerd: elke generieke sluitweg haalde alleen de klasse
+// 'visible' weg. Het kader of de <video> bleef daardoor in de pagina staan —
+// onzichtbaar, maar spelend. Een modal die bij het sluiten iets moet opruimen,
+// zegt dat nu één keer, in een data-close-attribuut op de overlay zelf. Wie
+// geen data-close heeft, sluit precies zoals voorheen.
+function sluitModal(el) {
+  if (!el) return;
+  const naam = el.dataset.close;
+  const fn = naam ? window[naam] : null;
+  if (typeof fn === 'function') { fn(); return; }
+  el.classList.remove('visible');
+}
+
+// Escape en een wissel van view sluiten alleen modals die hun sluitfunctie
+// hebben opgegeven. Zo verandert er niets aan de bestaande modals, en groeit
+// het gedrag mee zodra een modal zijn opruimwerk declareert.
+function sluitOpruimModals() {
+  document.querySelectorAll('.modal-overlay.visible[data-close]').forEach(sluitModal);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const lagen = [...document.querySelectorAll('.modal-overlay.visible[data-close]')];
+  if (!lagen.length) return;
+  // De laatst geopende ligt bovenop (TT-229) — die sluit als eerste.
+  lagen.sort((a, b) => (parseInt(a.style.zIndex || 0, 10)) - (parseInt(b.style.zIndex || 0, 10)));
+  sluitModal(lagen[lagen.length - 1]);
+});
+
 window.addEventListener('popstate', (e) => {
   const openModal = document.querySelector('.modal-overlay.visible');
   if (openModal) {
-    openModal.classList.remove('visible');
+    sluitModal(openModal);
     syncModalScrollLock();
     safeHistoryPush(history.state, location.hash || '#landing');
     return;
