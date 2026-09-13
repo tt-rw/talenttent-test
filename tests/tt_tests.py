@@ -770,9 +770,21 @@ def blok_browser():
 
         keuze = page.evaluate("""async () => {
           const uit = {};
+          // Ronald, 13-09-2026: "alleen de knop moet aan/uit gaan, verder
+          // niets." Vasthouden welk element er stond, en na de tik kijken of
+          // het nog dat élement is — hertekenen zou het vervangen.
+          const rijVoor = document.querySelector('#mhLinksList .media-rij');
+          const miniVoor = rijVoor.querySelector('.media-mini img');
           mhToggleLinkBanner(0);
+          const rijNa = document.querySelector('#mhLinksList .media-rij');
+          uit.zelfdeRij = rijVoor === rijNa && rijVoor.isConnected;
+          uit.zelfdeMiniatuur = miniVoor === rijNa.querySelector('.media-mini img');
           uit.naTik = document.querySelector('#mhLinksList .banner-btn').getAttribute('aria-pressed');
-          uit.randGoud = document.querySelector('#mhLinksList .media-rij').classList.contains('in-banner');
+          uit.geenGoudeRand = getComputedStyle(rijNa).borderTopColor === getComputedStyle(document.querySelectorAll('#mhLinksList .media-rij')[1]).borderTopColor;
+          uit.tekenInTeller = !!document.querySelector('#mhBannerTeller .banner-teken svg');
+          uit.tekenGoud = uit.tekenInTeller
+            ? getComputedStyle(document.querySelector('#mhBannerTeller .bb-schijf')).fill
+            : '';
           uit.teller = document.getElementById('mhBannerTeller').innerText;
           // Grens: twee staan aan, vul aan tot zes en probeer de zevende.
           mhMediaFiles = [1,2,3,4,5].map((n,i) => ({ name: 'f'+n, url: 'https://x/'+n+'.jpg', path: 'p'+n, type: 'foto', uploading: false, inBanner: true }));
@@ -790,7 +802,12 @@ def blok_browser():
           return uit;
         }""")
         check("tikken zet het teken aan", keuze["naTik"] == "true", keuze["naTik"])
-        check("een gekozen rij krijgt de gouden rand", keuze["randGoud"], "")
+        check("aan/uit tekent de lijst niet opnieuw",
+              keuze["zelfdeRij"] and keuze["zelfdeMiniatuur"], json.dumps(keuze)[:200])
+        check("een gekozen rij krijgt géén gouden rand", keuze["geenGoudeRand"], "")
+        check("het bannerteken staat vóór de tellertekst", keuze["tekenInTeller"], "")
+        check("en staat daar in de gouden stand",
+              keuze["tekenGoud"] == "rgb(245, 197, 24)", keuze["tekenGoud"])
         # Eén foto stond al in de banner, dus na deze tik zijn het er twee.
         check("de teller telt mee", "Gekozen: 2" in keuze["teller"], keuze["teller"])
         check("zes is de grens", keuze["voorGrens"] == 6 and keuze["naGrens"] == 6,
