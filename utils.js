@@ -1480,8 +1480,25 @@ function bannerKnopHTML(aan, onclickJs, opBeeld) {
 
 // Eén tekst, twee schermen (wizard en Je mediahoek) — zie §2.11: een maat of
 // een regel wordt in de standaard doorgevoerd, niet per scherm.
+// Het teken staat vóór de tekst, in de gekozen (gouden) stand en op
+// teksthoogte — zo weet de gebruiker meteen welk teken hij zoekt
+// (besluit Ronald, 13-09-2026).
 function bannerTellerHTML(aantal) {
-  return `<b>Kies wat in je banner komt.</b> Gekozen: ${aantal} van ${MEDIA_BANNER_MAX}`;
+  return `<span class="banner-teken" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="bb-schijf" cx="12" cy="12" r="11"></circle><rect class="bb-vorm" x="5.5" y="8.5" width="13" height="7" rx="2"></rect></svg></span>` +
+    `<b>Kies wat in je banner komt.</b> Gekozen: ${aantal} van ${MEDIA_BANNER_MAX}`;
+}
+
+// Aan/uit zonder de lijst opnieuw te tekenen (Ronald, 13-09-2026: "alleen de
+// knop moet aan/uit gaan, verder niets"). Hertekenen liet alle rijen kort
+// verdwijnen — de rijen kregen hun openingsanimatie opnieuw en elke miniatuur
+// werd opnieuw opgehaald. Alleen deze ene knop wijzigt nu van stand.
+function bannerKnopStandZetten(houderId, i, aan) {
+  const knop = document.querySelectorAll(`#${houderId} .banner-btn`)[i];
+  if (!knop) return;
+  const label = aan ? 'Uit je banner halen' : 'In je banner tonen';
+  knop.setAttribute('aria-pressed', aan ? 'true' : 'false');
+  knop.setAttribute('aria-label', label);
+  knop.setAttribute('title', label);
 }
 
 // Waar of onwaar teruggeven zodat de aanroeper de vlag alleen omzet als het
@@ -1597,7 +1614,7 @@ function mediaLinkRijHTML(l, i, voorvoegsel) {
   const platform = veilig ? detectPlatform(veilig) : '';
   const naam = platform || 'Nieuwe link';
   return `
-    <div class="media-rij${l.inBanner ? ' in-banner' : ''}">
+    <div class="media-rij">
       ${bannerKnopHTML(!!l.inBanner, `${fn('toggleLinkBanner')}(${i})`)}
       <button type="button" class="media-mini" onclick="${fn('speelLink')}(${i})" aria-label="Afspelen"${veilig ? '' : ' disabled'}>
         ${mediaLinkMiniatuurHTML(l.url)}
@@ -1621,7 +1638,7 @@ function mediaTegelHTML(m, i, voorvoegsel) {
     ? `<img src="${escAttr(safeUrl(m.url) || '')}" alt="${escAttr(m.name || '')}">`
     : `<span class="media-thumb-video">Video</span>`;
   return `
-    <div class="media-thumb${m.inBanner ? ' in-banner' : ''}">
+    <div class="media-thumb">
       <button type="button" class="media-thumb-open" onclick="${fn('speelMedia')}(${i})" aria-label="${m.type === 'foto' ? 'Foto bekijken' : 'Video afspelen'}">${beeld}</button>
       ${bannerKnopHTML(!!m.inBanner, `${fn('toggleMediaBanner')}(${i})`, true)}
       ${m.uploading ? `<div class="media-thumb-laden"><div class="save-spinner"></div></div>` : ''}

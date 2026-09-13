@@ -74,11 +74,23 @@ van de algemene invoerveldregel, die specifieker is. Nu
 `.media-rij input.media-rij-url`. En "SoundCloud" werd in een miniatuur van
 56px weggesneden; die tekst breekt nu af in plaats van te verdwijnen.
 
-**Testset uitgebreid met blok 13:** 30 controles over de rijvorm, het
+**Na Ronalds test dezelfde dag, drie aanpassingen (13-09-2026).**
+1. **Aan/uit gaf een korte hapering** — alle rijen leken even uit te gaan.
+   Oorzaak: elke tik tekende de hele lijst opnieuw, dus elke rij kreeg zijn
+   openingsanimatie terug en elke miniatuur werd opnieuw opgehaald. Nu wijzigt
+   alleen de aangetikte knop van stand (`bannerKnopStandZetten()`), plus de
+   teller. Ronald: *"alleen de knop moet aan/uit gaan, verder niets."*
+2. **De gouden rand om een gekozen rij of tegel is weg** — *"dat domineert te
+   veel."* Het teken zelf is het signaal. De klasse `in-banner` is daarmee
+   overbodig en meteen verwijderd (§2.10).
+3. **Het bannerteken staat nu vóór de tellertekst**, in de gouden stand en op
+   teksthoogte (`1.2em`), zodat zichtbaar is welk teken je zoekt.
+
+**Testset uitgebreid met blok 13:** 33 controles over de rijvorm, het
 bannerteken (plek, tikvlak, aan/uit), de teller, de grens van zes, het
 wegschrijven van `in_banner`, het afkappen van de naam en het mediascherm
 (cookieloze variant, modalstapeling, sluiten stopt het afspelen, uitleg bij een
-platform zonder speler). **Eindstand: 126 van 126 geslaagd.**
+platform zonder speler). **Eindstand: 129 van 129 geslaagd.**
 
 **Correctie op een eerder vastgelegd plan (§2.13).** TT-262 beschreef de
 huisstijl-check als "blok 13 van de vaste testset". Dat nummer is vandaag

@@ -1272,6 +1272,18 @@
     line-height: 1.4;
   }
   .banner-teller b { color: var(--text); }
+  /* Het teken vóór de tekst, in de gouden stand en op teksthoogte
+     (Ronald, 13-09-2026). */
+  .banner-teller .banner-teken {
+    display: inline-block;
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: -0.25em;
+    margin-right: 6px;
+  }
+  .banner-teller .banner-teken svg { width: 100%; height: 100%; display: block; }
+  .banner-teller .bb-schijf { fill: var(--accent); stroke: var(--accent); stroke-width: var(--line); }
+  .banner-teller .bb-vorm { fill: none; stroke: var(--bg); stroke-width: var(--line); }
 
   /* Het bannerteken: een cirkel met de vorm van de banner erin. Gekozen is
      goud gevuld met de vorm in bijna-zwart; niet gekozen is een omtrek zonder
@@ -1313,7 +1325,6 @@
     border-radius: 8px;
     animation: slideIn 0.2s ease;
   }
-  .media-rij.in-banner { border-color: var(--accent); }
 
   .media-mini {
     width: 56px;
@@ -1398,8 +1409,9 @@
     top: -6px; right: -6px; bottom: -6px; left: -6px;
   }
 
-  /* Tegel in het tabblad Upload: bannerteken linksboven, ✕ rechtsboven. */
-  .media-thumb.in-banner { border-color: var(--accent); }
+  /* Tegel in het tabblad Upload: bannerteken linksboven, ✕ rechtsboven.
+     Geen gouden rand om een gekozen rij of tegel — dat domineerde het scherm
+     (Ronald, 13-09-2026). Het teken zelf is het signaal. */
   .media-thumb .banner-btn { position: absolute; top: 4px; left: 4px; z-index: 3; }
   .media-thumb-open {
     position: absolute;

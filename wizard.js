@@ -1286,7 +1286,8 @@ function toggleMediaBanner(i) {
   if (!m) return;
   if (!bannerKeuzeMag(bannerAantal(state.mediaFiles, state.mediaLinks), !m.inBanner)) return;
   m.inBanner = !m.inBanner;
-  renderMediaGrid();
+  bannerKnopStandZetten('mediaGrid', i, m.inBanner);
+  bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
 }
 
 function speelMedia(i) {
@@ -1340,7 +1341,8 @@ function toggleLinkBanner(i) {
   if (!l.url.trim()) { showToast('Vul eerst het adres van de link in.'); return; }
   if (!bannerKeuzeMag(bannerAantal(state.mediaFiles, state.mediaLinks), !l.inBanner)) return;
   l.inBanner = !l.inBanner;
-  renderLinksList();
+  bannerKnopStandZetten('linksList', i, l.inBanner);
+  bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
 }
 
 function speelLink(i) {

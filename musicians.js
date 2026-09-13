@@ -1453,7 +1453,8 @@ function mhToggleMediaBanner(i) {
   if (!m) return;
   if (!bannerKeuzeMag(bannerAantal(mhMediaFiles, mhMediaLinks), !m.inBanner)) return;
   m.inBanner = !m.inBanner;
-  mhRenderMediaGrid();
+  bannerKnopStandZetten('mhMediaGrid', i, m.inBanner);
+  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
 }
 
 function mhSpeelMedia(i) {
@@ -1497,7 +1498,8 @@ function mhToggleLinkBanner(i) {
   if (!l.url.trim()) { showToast('Vul eerst het adres van de link in.'); return; }
   if (!bannerKeuzeMag(bannerAantal(mhMediaFiles, mhMediaLinks), !l.inBanner)) return;
   l.inBanner = !l.inBanner;
-  mhRenderLinksList();
+  bannerKnopStandZetten('mhLinksList', i, l.inBanner);
+  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
 }
 
 function mhSpeelLink(i) {
