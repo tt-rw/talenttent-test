@@ -687,6 +687,176 @@ def blok_browser():
         page.evaluate("document.getElementById('filterName').value = ''")
         page.evaluate("window.TT_STUB.reset()")
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 13 — Je mediahoek: bannerteken, rijvorm en het mediascherm
+        # TT-263 (13-09-2026, Ronald): "gebruiker kan niet zien welke link
+        # welke video is", plus de keuze voor de bannerbalk en afspelen
+        # binnen de app.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 13 — mediahoek: bannerteken, rijen en het mediascherm")
+
+        # De naam van een video komt van oEmbed. In de testset gaat die niet
+        # over het echte internet: het antwoord wordt hier nagebootst, zodat
+        # de weg getoetst wordt en niet de bereikbaarheid van YouTube.
+        page.route("**/oembed**", lambda r: r.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps({"title": "Testvideo van Ronald"})))
+
+        page_errors.clear()
+        media = page.evaluate("""async () => {
+          showView('profieltegels');
+          openTegelScreen('mediahoek');
+          myMusicianId = 'm1';
+          mhMediaFiles = [
+            { name: 'foto.jpg', url: 'https://x/foto.jpg', path: 'p1', type: 'foto', uploading: false, inBanner: true },
+            { name: 'clip.mp4', url: 'https://x/clip.mp4', path: 'p2', type: 'video', uploading: false, inBanner: false }
+          ];
+          mhMediaLinks = [
+            { url: 'https://youtu.be/tAGnKpE4Nxk', inBanner: false },
+            { url: 'https://www.instagram.com/p/abc/', inBanner: false }
+          ];
+          mhRenderMediaGrid();
+          mhRenderLinksList();
+          await new Promise(r => setTimeout(r, 250));
+
+          const rij = document.querySelector('#mhLinksList .media-rij');
+          const titel = rij.querySelector('.media-rij-titel');
+          const mini = rij.querySelector('.media-mini img');
+          const knop = rij.querySelector('.banner-btn');
+          const st = getComputedStyle(titel);
+          const tikvlak = getComputedStyle(knop, '::after');
+
+          const tegel = document.querySelector('#mhMediaGrid .media-thumb');
+          const tKnop = tegel.querySelector('.banner-btn').getBoundingClientRect();
+          const tKruis = tegel.querySelector('.thumb-remove').getBoundingClientRect();
+          const tVak = tegel.getBoundingClientRect();
+
+          return {
+            aantalRijen: document.querySelectorAll('#mhLinksList .media-rij').length,
+            heeftBannerKnop: !!knop,
+            knopUit: knop.getAttribute('aria-pressed'),
+            miniIsYoutube: !!mini && mini.src.indexOf('img.youtube.com') === 0 + mini.src.indexOf('img.youtube.com'),
+            miniSrc: mini ? mini.src : '',
+            titelTekst: titel.textContent,
+            titelEenRegel: st.whiteSpace === 'nowrap' && st.textOverflow === 'ellipsis',
+            titelAttribuut: titel.getAttribute('title'),
+            tikvlakBoven: tikvlak.top,
+            adresVeld: !!rij.querySelector('input.media-rij-url'),
+            tellerTekst: document.getElementById('mhBannerTeller').innerText,
+            tegelKnopLinks: Math.round(tKnop.left - tVak.left),
+            tegelKruisRechts: Math.round(tVak.right - tKruis.right),
+            tegelKnopBoven: Math.round(tKnop.top - tVak.top),
+          };
+        }""")
+        check("elke link is een rij met miniatuur", media["aantalRijen"] == 2, json.dumps(media)[:200])
+        check("elke rij heeft het bannerteken", media["heeftBannerKnop"], "")
+        check("niet gekozen staat op aria-pressed=false", media["knopUit"] == "false", media["knopUit"])
+        check("een YouTube-link toont het echte beeld",
+              "img.youtube.com" in media["miniSrc"], media["miniSrc"])
+        check("de naam van de video komt in de rij",
+              media["titelTekst"] == "Testvideo van Ronald", media["titelTekst"])
+        check("de naam staat op één regel en kapt af met …", media["titelEenRegel"], "")
+        check("de hele naam staat in het label bij aanwijzen",
+              media["titelAttribuut"] is not None, "geen title-attribuut")
+        check("het bannerteken heeft een tikvlak van 44px",
+              media["tikvlakBoven"] == "-10px", media["tikvlakBoven"])
+        check("het adres blijft bewerkbaar in de rij", media["adresVeld"], "")
+        check("de teller noemt de grens van 6",
+              "van 6" in media["tellerTekst"], media["tellerTekst"])
+        check("op een tegel staat het teken linksboven",
+              media["tegelKnopLinks"] <= 6 and media["tegelKnopBoven"] <= 6, json.dumps(media)[:200])
+        check("op een tegel staat het kruis rechtsboven",
+              media["tegelKruisRechts"] <= 6, str(media["tegelKruisRechts"]))
+
+        keuze = page.evaluate("""async () => {
+          const uit = {};
+          mhToggleLinkBanner(0);
+          uit.naTik = document.querySelector('#mhLinksList .banner-btn').getAttribute('aria-pressed');
+          uit.randGoud = document.querySelector('#mhLinksList .media-rij').classList.contains('in-banner');
+          uit.teller = document.getElementById('mhBannerTeller').innerText;
+          // Grens: twee staan aan, vul aan tot zes en probeer de zevende.
+          mhMediaFiles = [1,2,3,4,5].map((n,i) => ({ name: 'f'+n, url: 'https://x/'+n+'.jpg', path: 'p'+n, type: 'foto', uploading: false, inBanner: true }));
+          mhRenderMediaGrid();
+          uit.voorGrens = bannerAantal(mhMediaFiles, mhMediaLinks);
+          mhToggleLinkBanner(1);
+          uit.naGrens = bannerAantal(mhMediaFiles, mhMediaLinks);
+          uit.tweedeLink = mhMediaLinks[1].inBanner;
+          uit.toast = (document.getElementById('appToast') || {}).textContent || '';
+          // lege link mag niet in de banner
+          mhMediaLinks.push({ url: '', inBanner: false });
+          mhRenderLinksList();
+          mhToggleLinkBanner(2);
+          uit.legeLink = mhMediaLinks[2].inBanner;
+          return uit;
+        }""")
+        check("tikken zet het teken aan", keuze["naTik"] == "true", keuze["naTik"])
+        check("een gekozen rij krijgt de gouden rand", keuze["randGoud"], "")
+        # Eén foto stond al in de banner, dus na deze tik zijn het er twee.
+        check("de teller telt mee", "Gekozen: 2" in keuze["teller"], keuze["teller"])
+        check("zes is de grens", keuze["voorGrens"] == 6 and keuze["naGrens"] == 6,
+              f"voor {keuze['voorGrens']}, na {keuze['naGrens']}")
+        check("de zevende keuze wordt geweigerd", keuze["tweedeLink"] is False, "")
+        check("en dat wordt gemeld", "maximaal 6" in keuze["toast"], keuze["toast"])
+        check("een lege link kan niet in de banner", keuze["legeLink"] is False, "")
+
+        opslaan = page.evaluate("""async () => {
+          window.TT_STUB.calls = [];
+          mhAvatarUrl = null;
+          mhSnapshot = '';
+          await saveJeMediahoek();
+          // De stub legt een insert vast in TT_STUB.data; saveJeMediahoek wist
+          // de tabel eerst, dus wat er staat is precies wat er is weggeschreven.
+          const rijen = window.TT_STUB.data.musician_media || [];
+          return {
+            aantal: rijen.length,
+            heeftVlag: rijen.every(r => 'in_banner' in r),
+            gekozen: rijen.filter(r => r.in_banner).length,
+          };
+        }""")
+        check("opslaan schrijft de bannerkeuze mee", opslaan["heeftVlag"], json.dumps(opslaan))
+        check("en bewaart precies de gekozen items",
+              opslaan["gekozen"] == 6, json.dumps(opslaan))
+
+        speler = page.evaluate("""async () => {
+          const uit = {};
+          openMediaSpeler('https://youtu.be/tAGnKpE4Nxk', 'link', 'Testvideo', 'YouTube');
+          const modal = document.getElementById('mediaSpelerModal');
+          const frame = modal.querySelector('iframe');
+          uit.open = modal.classList.contains('visible');
+          uit.nocookie = frame ? frame.src.indexOf('https://www.youtube-nocookie.com/embed/') === 0 : false;
+          uit.titel = document.getElementById('mediaSpelerTitel').textContent;
+          // initModalStapeling() werkt met een MutationObserver; die draait pas
+          // na de huidige taak. Even wachten, anders meet de toets te vroeg.
+          await new Promise(r => setTimeout(r, 50));
+          uit.laag = modal.style.zIndex !== '';
+          closeMediaSpeler();
+          uit.dicht = !modal.classList.contains('visible');
+          uit.leeg = document.getElementById('mediaSpelerBeeld').innerHTML === '';
+          // een platform zonder speler
+          openMediaSpeler('https://www.instagram.com/p/abc/', 'link', null, 'Instagram');
+          uit.uitleg = !!modal.querySelector('.media-speler-uitleg');
+          uit.knop = (modal.querySelector('.media-speler-knop') || {}).textContent || '';
+          uit.geenFrame = !modal.querySelector('iframe');
+          closeMediaSpeler();
+          // eigen video
+          openMediaSpeler('https://x/clip.mp4', 'video', 'clip.mp4', '');
+          uit.eigenVideo = !!modal.querySelector('video');
+          closeMediaSpeler();
+          return uit;
+        }""")
+        check("het mediascherm opent", speler["open"], "")
+        check("YouTube speelt via de cookieloze variant", speler["nocookie"], "")
+        check("de naam staat in de kop van het scherm", speler["titel"] == "Testvideo", speler["titel"])
+        check("het scherm krijgt een laag van de modalstapeling (TT-229)", speler["laag"], "")
+        check("sluiten stopt het afspelen", speler["dicht"] and speler["leeg"], "")
+        check("een platform zonder speler krijgt uitleg",
+              speler["uitleg"] and speler["geenFrame"], "")
+        check("met één knop naar het platform", "Instagram" in speler["knop"], speler["knop"])
+        check("een eigen video speelt in hetzelfde scherm", speler["eigenVideo"], "")
+        check("geen paginafouten in blok 13", not page_errors, "; ".join(page_errors)[:200])
+
+        page.evaluate("window.TT_STUB.reset()")
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
