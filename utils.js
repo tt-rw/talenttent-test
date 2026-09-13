@@ -1364,3 +1364,279 @@ function fitProfileName(root) {
     }
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Media — gedeeld door de wizard (stap 4), Je mediahoek en het profiel
+// ═══════════════════════════════════════════════════════════════════════
+// TT-263 (13-09-2026, Ronald): "gebruiker kan niet zien welke link welke
+// video is." Een rij met alleen een adres zegt niets. Daarom: miniatuur,
+// naam van de video, een bannerteken om te kiezen wat straks in de
+// bannerbalk op het profiel komt, en afspelen binnen de app in plaats van
+// een sprong naar de browser.
+//
+// detectPlatform() en extractYouTubeId() stonden tot 13-09-2026 in
+// wizard.js. Ze worden nu door drie bestanden gebruikt; gedeelde
+// hulpfuncties horen hier. In wizard.js zijn ze verwijderd, niet gekopieerd.
+
+// Ronalds verwachting (13-09-2026): vijf à zes items in de banner.
+const MEDIA_BANNER_MAX = 6;
+
+function detectPlatform(url) {
+  if (url.includes('youtube') || url.includes('youtu.be')) return 'YouTube';
+  if (url.includes('instagram')) return 'Instagram';
+  if (url.includes('soundcloud')) return 'SoundCloud';
+  if (url.includes('tiktok')) return 'TikTok';
+  if (url.includes('spotify')) return 'Spotify';
+  return 'Link';
+}
+
+// TT-184 (03-09-2026): een YouTube-miniatuur is zonder sleutel te bouwen —
+// elke YouTube-URL bevat een video-ID, en img.youtube.com/vi/<ID>/hqdefault.jpg
+// bestaat altijd voor een geldige video.
+function extractYouTubeId(url) {
+  let u;
+  try { u = new URL(url); } catch (e) { return null; }
+  const host = u.hostname.replace(/^www\./, '');
+  if (host === 'youtu.be') {
+    return u.pathname.slice(1).split('/')[0] || null;
+  }
+  if (host === 'youtube.com' || host === 'm.youtube.com') {
+    if (u.pathname === '/watch') return u.searchParams.get('v');
+    const shorts = u.pathname.match(/^\/shorts\/([^/]+)/);
+    if (shorts) return shorts[1];
+    const embed = u.pathname.match(/^\/embed\/([^/]+)/);
+    if (embed) return embed[1];
+  }
+  return null;
+}
+
+// ─── De naam van een video ───────────────────────────────────────────────
+// Gemeten op 13-09-2026 vanaf talenttent.org, alle vier met status 200 en
+// zonder sleutel: YouTube, Spotify, SoundCloud en TikTok geven via oEmbed de
+// titel terug. Instagram niet — die weigert de aanvraag (geen token), dus
+// daar blijft de platformnaam staan.
+const MEDIA_OEMBED = {
+  YouTube:    u => 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(u),
+  Spotify:    u => 'https://open.spotify.com/oembed?url=' + encodeURIComponent(u),
+  SoundCloud: u => 'https://soundcloud.com/oembed?format=json&url=' + encodeURIComponent(u),
+  TikTok:     u => 'https://www.tiktok.com/oembed?url=' + encodeURIComponent(u),
+};
+
+// Onthouden per adres, ook een mislukking: anders vraagt elke hertekening
+// van de lijst opnieuw, en een lijst hertekent bij elke toetsaanslag.
+const mediaTitelCache = new Map();
+
+async function mediaTitelOphalen(url) {
+  const veilig = safeUrl(url);
+  if (!veilig) return null;
+  if (mediaTitelCache.has(veilig)) return mediaTitelCache.get(veilig);
+  const bouw = MEDIA_OEMBED[detectPlatform(veilig)];
+  if (!bouw) { mediaTitelCache.set(veilig, null); return null; }
+  let titel = null;
+  try {
+    const r = await fetch(bouw(veilig));
+    if (r.ok) {
+      const j = await r.json();
+      titel = (j && j.title) ? String(j.title) : null;
+    }
+  } catch (e) {
+    // Geen netwerk, of het platform weigert. Geen melding: de platformnaam
+    // staat er al, en een toast per link zou het scherm overspoelen.
+    titel = null;
+  }
+  mediaTitelCache.set(veilig, titel);
+  return titel;
+}
+
+// Vult de namen ná het tekenen van een lijst. Elk element dat een naam kan
+// krijgen draagt data-media-url; staat er al een naam, dan blijft die staan.
+function mediaTitelsBijwerken(root) {
+  const scope = root || document;
+  scope.querySelectorAll('[data-media-url]').forEach(async el => {
+    const url = el.getAttribute('data-media-url');
+    if (!url || el.dataset.titelGezet === '1') return;
+    const titel = await mediaTitelOphalen(url);
+    if (!titel) return;
+    if (!el.isConnected) return; // lijst is intussen opnieuw getekend
+    el.textContent = titel;
+    el.dataset.titelGezet = '1';
+    if (el.classList.contains('media-rij-titel')) el.title = titel;
+  });
+}
+
+// ─── Het bannerteken ─────────────────────────────────────────────────────
+// Besluit Ronald 13-09-2026: geen vinkje maar de vorm van de banner — een
+// cirkel met een liggende afgeronde rechthoek erin. Gekozen is goud gevuld
+// met de vorm in bijna-zwart; niet gekozen is een omtrek zonder vulling.
+// Goud staat hier als vlak onder een donkere vorm, nooit doorschijnend
+// (huisstijl §1.1). Alle kleuren staan in styles.css, niet hier.
+function bannerKnopHTML(aan, onclickJs, opBeeld) {
+  return `<button type="button" class="banner-btn${opBeeld ? ' op-beeld' : ''}" aria-pressed="${aan ? 'true' : 'false'}"
+    aria-label="${aan ? 'Uit je banner halen' : 'In je banner tonen'}" title="${aan ? 'Uit je banner halen' : 'In je banner tonen'}"
+    onclick="${onclickJs}">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="bb-schijf" cx="12" cy="12" r="11"></circle><rect class="bb-vorm" x="5.5" y="8.5" width="13" height="7" rx="2"></rect></svg>
+  </button>`;
+}
+
+// Eén tekst, twee schermen (wizard en Je mediahoek) — zie §2.11: een maat of
+// een regel wordt in de standaard doorgevoerd, niet per scherm.
+function bannerTellerHTML(aantal) {
+  return `<b>Kies wat in je banner komt.</b> Gekozen: ${aantal} van ${MEDIA_BANNER_MAX}`;
+}
+
+// Waar of onwaar teruggeven zodat de aanroeper de vlag alleen omzet als het
+// mag. De bovengrens geldt over foto's, video's en links samen: de banner
+// toont één reeks, geen reeks per tabblad.
+function bannerKeuzeMag(huidigAantal, wordtAan) {
+  if (!wordtAan) return true;
+  if (huidigAantal < MEDIA_BANNER_MAX) return true;
+  showToast(`Je banner toont maximaal ${MEDIA_BANNER_MAX} items.`);
+  return false;
+}
+
+// ─── Afspelen binnen de app ──────────────────────────────────────────────
+// TT-263: een link opende tot 13-09-2026 de browser van de gebruiker, en
+// daarmee verliet iemand de app. Gemeten op 13-09-2026 vanaf talenttent.org:
+// het kader van YouTube (youtube-nocookie), Spotify en SoundCloud laadt.
+// Instagram en TikTok laten afspelen binnen een andere pagina niet toe; die
+// krijgen een scherm dat dat zegt, met één knop naar het platform zelf.
+// De cookieloze variant van YouTube is met opzet gekozen, en het kader wordt
+// pas gebouwd ná de tik — vóór die tik staat er niets van een ander bedrijf
+// in de pagina.
+function mediaEmbedSrc(url) {
+  const veilig = safeUrl(url);
+  if (!veilig) return null;
+  const yt = extractYouTubeId(veilig);
+  if (yt) return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(yt)}?autoplay=1&rel=0`;
+  const platform = detectPlatform(veilig);
+  if (platform === 'Spotify') {
+    try {
+      const u = new URL(veilig);
+      const m = u.pathname.match(/^\/(track|album|playlist|episode|show)\/([^/]+)/);
+      if (m) return `https://open.spotify.com/embed/${m[1]}/${encodeURIComponent(m[2])}`;
+    } catch (e) { return null; }
+    return null;
+  }
+  if (platform === 'SoundCloud') {
+    return 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(veilig);
+  }
+  return null;
+}
+
+function openMediaSpeler(url, soort, titel, platform) {
+  const veilig = safeUrl(url);
+  if (!veilig) { showToast('Deze link kan niet geopend worden.'); return; }
+  const naam = titel || platform || (soort === 'video' ? "Video" : 'Link');
+  document.getElementById('mediaSpelerTitel').textContent = naam;
+
+  const beeld = document.getElementById('mediaSpelerBeeld');
+  const voet = document.getElementById('mediaSpelerVoet');
+  const embed = soort === 'link' ? mediaEmbedSrc(veilig) : null;
+
+  if (soort === 'video') {
+    beeld.innerHTML = `<video src="${escAttr(veilig)}" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
+    voet.innerHTML = '';
+  } else if (embed) {
+    beeld.innerHTML = `<iframe src="${escAttr(embed)}" title="${escAttr(naam)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
+    voet.innerHTML = `<a class="media-speler-knop" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
+  } else {
+    beeld.innerHTML = `<div class="media-speler-uitleg">
+      <div class="media-speler-platform">${escHtml(platform || 'Deze link')}</div>
+      <p>Dit platform laat afspelen binnen een app niet toe.</p>
+    </div>`;
+    voet.innerHTML = `<a class="media-speler-knop primair" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
+  }
+
+  document.getElementById('mediaSpelerModal').classList.add('visible');
+  if (soort === 'link' && !titel) {
+    // De naam komt na het openen binnen; het scherm staat er dan al.
+    mediaTitelOphalen(veilig).then(t => {
+      if (t && document.getElementById('mediaSpelerModal').classList.contains('visible')) {
+        document.getElementById('mediaSpelerTitel').textContent = t;
+      }
+    });
+  }
+}
+
+function closeMediaSpeler() {
+  document.getElementById('mediaSpelerModal').classList.remove('visible');
+  // Leegmaken stopt het afspelen. Zonder dit speelt het geluid door achter
+  // een gesloten scherm.
+  document.getElementById('mediaSpelerBeeld').innerHTML = '';
+  document.getElementById('mediaSpelerVoet').innerHTML = '';
+}
+
+// ─── Eén vorm voor beide schermen ────────────────────────────────────────
+// De wizard (stap 4) en Je mediahoek tonen dezelfde lijst. Tot 13-09-2026
+// stond die HTML twee keer, bijna gelijk maar niet helemaal. Nu staat de vorm
+// hier één keer; de twee schermen verschillen alleen in de namen van hun
+// functies (zonder voorvoegsel = wizard, 'mh' = Je mediahoek).
+function mediaFnNaam(voorvoegsel, naam) {
+  return voorvoegsel ? voorvoegsel + naam.charAt(0).toUpperCase() + naam.slice(1) : naam;
+}
+
+// Miniatuur van een link: bij YouTube het echte beeld, anders een vlak met de
+// platformnaam. Bewust zonder extra netwerkaanvraag per link (TT-184).
+function mediaLinkMiniatuurHTML(url) {
+  const veilig = safeUrl(url);
+  const platform = veilig ? detectPlatform(veilig) : 'Link';
+  const yt = veilig ? extractYouTubeId(veilig) : null;
+  if (yt) {
+    return `<img src="https://img.youtube.com/vi/${escAttr(yt)}/hqdefault.jpg" alt="" loading="lazy">`;
+  }
+  return `<span class="media-mini-platform">${escHtml(veilig ? platform : '—')}</span>`;
+}
+
+// Eén rij in het tabblad Links: bannerteken · miniatuur · naam · adres · ✕.
+// De naam staat op één regel en wordt afgekapt met één beletselteken; een tik
+// vouwt 'm uit (besluit Ronald 13-09-2026, M1), op een bureaublad verschijnt
+// hij bovendien als label bij aanwijzen (title).
+function mediaLinkRijHTML(l, i, voorvoegsel) {
+  const fn = n => mediaFnNaam(voorvoegsel, n);
+  const veilig = safeUrl(l.url);
+  const platform = veilig ? detectPlatform(veilig) : '';
+  const naam = platform || 'Nieuwe link';
+  return `
+    <div class="media-rij${l.inBanner ? ' in-banner' : ''}">
+      ${bannerKnopHTML(!!l.inBanner, `${fn('toggleLinkBanner')}(${i})`)}
+      <button type="button" class="media-mini" onclick="${fn('speelLink')}(${i})" aria-label="Afspelen"${veilig ? '' : ' disabled'}>
+        ${mediaLinkMiniatuurHTML(l.url)}
+      </button>
+      <div class="media-rij-tekst">
+        <div class="media-rij-titel" ${veilig ? `data-media-url="${escAttr(veilig)}"` : ''} title="${escAttr(naam)}"
+          onclick="this.classList.toggle('open')">${escHtml(naam)}</div>
+        <input type="url" class="media-rij-url" value="${escAttr(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
+          aria-label="Adres van de link"
+          oninput="${fn('updateLinkUrl')}(${i}, this)" onchange="${fn('renderLinksList')}()">
+      </div>
+      <button type="button" class="media-rij-weg" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">✕</button>
+    </div>`;
+}
+
+// Eén tegel in het tabblad Upload. Bannerteken linksboven, ✕ rechtsboven
+// (besluit Ronald 13-09-2026).
+function mediaTegelHTML(m, i, voorvoegsel) {
+  const fn = n => mediaFnNaam(voorvoegsel, n);
+  const beeld = m.type === 'foto'
+    ? `<img src="${escAttr(safeUrl(m.url) || '')}" alt="${escAttr(m.name || '')}">`
+    : `<span class="media-thumb-video">Video</span>`;
+  return `
+    <div class="media-thumb${m.inBanner ? ' in-banner' : ''}">
+      <button type="button" class="media-thumb-open" onclick="${fn('speelMedia')}(${i})" aria-label="${m.type === 'foto' ? 'Foto bekijken' : 'Video afspelen'}">${beeld}</button>
+      ${bannerKnopHTML(!!m.inBanner, `${fn('toggleMediaBanner')}(${i})`, true)}
+      ${m.uploading ? `<div class="media-thumb-laden"><div class="save-spinner"></div></div>` : ''}
+      <div class="thumb-type">${escHtml(m.type)}</div>
+      <button type="button" class="thumb-remove" onclick="${fn('removeMedia')}(${i})" aria-label="Verwijderen">✕</button>
+    </div>`;
+}
+
+// De bovengrens geldt over foto's, video's en links samen: de banner toont
+// één reeks, geen reeks per tabblad.
+function bannerAantal(bestanden, links) {
+  return (bestanden || []).filter(m => m.inBanner).length + (links || []).filter(l => l.inBanner).length;
+}
+
+function bannerTellerBijwerken(elId, bestanden, links) {
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = bannerTellerHTML(bannerAantal(bestanden, links));
+}

@@ -1,6 +1,102 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 12-09-2026 (vervolg) — **TT-247, TT-257 en TT-258 gebouwd en getest. Eindstand 96 van 96.**
+**Laatste update:** 13-09-2026 — **TT-263 gebouwd en getest: de mediahoek laat nu zien welke link welke video is, de gebruiker kiest wat in de banner komt, en een video speelt binnen de app. Eindstand 126 van 126.**
+
+**Aanleiding.** Ronald, met twee schermafdrukken van Profiel bewerken → Je
+mediahoek: *"Gebruiker kan niet zien welke link welke video is."* Daarna twee
+aanvullingen: *"binnenkort voegen we een banner toe op de profielpagina… de
+gebruiker moet hier een keuze maken (vinken) welke foto/video/link wordt
+getoond"* en *"links worden nu geopend in de standaard browser van de
+gebruiker. kunnen video's binnen de app worden geopend?"*
+
+**Eerst drie visuele voorstellen, toen bouwen** (op verzoek van Ronald). Zijn
+besluiten, alle drie vastgelegd in `mediahoek-besluiten-13-09-2026.html` in de
+gedeelde map:
+1. **Variant B** — een link is een rij met miniatuur, naam en adres. Het
+   tabblad Upload houdt zijn tegelraster.
+2. **Het vinkje is een bannerteken geworden** — een cirkel met de vorm van de
+   banner erin. Gekozen: goud gevuld, vorm in bijna-zwart. Niet gekozen:
+   witte omtrek zonder vulling. **Er bestond nog geen bannericoon in de app**
+   (geverifieerd: er waren er negen); dit is het tiende.
+3. **Een lange naam wordt op één regel afgekapt met één beletselteken.** Op
+   een bureaublad verschijnt het volledige label bij aanwijzen; op een telefoon
+   vouwt een tik de naam uit (M1 — Ronald: *"omdat dat de tegels op gelijke
+   hoogte maakt"*).
+
+**Vijf metingen op de echte site, vóór er één regel code wijzigde** (via de
+browserpane, zie §12 van de projectinstructies):
+
+| Wat | Uitkomst |
+|---|---|
+| `youtube.com/oembed` vanaf talenttent.org | **Geverifieerd** — status 200, zonder sleutel, geeft titel en kanaalnaam |
+| `youtube-nocookie.com/embed/<id>` in een kader | **Geverifieerd** — laadt |
+| Spotify en SoundCloud (oEmbed én kader) | **Geverifieerd** — beide 200, beide kaders laden |
+| TikTok oEmbed | **Geverifieerd** — titel en miniatuur, afspelen in de app niet |
+| Instagram oEmbed zonder token | **Geverifieerd niet mogelijk** — de aanvraag wordt geweigerd |
+
+**De databasekolom was de enige blokkade.** Gemeten: `musician_media.in_banner`
+bestond niet, dus de keuze had nergens een plek om bewaard te worden. Ronald
+heeft `alter table public.musician_media add column in_banner boolean not null
+default false;` gedraaid op 13-09-2026; daarna opnieuw gemeten: de kolom staat.
+
+**Wat er gebouwd is.**
+1. **Eén vorm voor beide schermen.** `mediaLinkRijHTML()`, `mediaTegelHTML()`,
+   `bannerKnopHTML()`, `bannerTellerHTML()` en `bannerKeuzeMag()` staan in
+   `utils.js`. De wizard (stap 4) en Je mediahoek gebruiken dezelfde functies;
+   ze verschillen alleen in de namen van hun eigen functies. Tot vandaag stond
+   die HTML twee keer, bijna gelijk maar niet helemaal.
+2. **De naam van de video** komt via oEmbed, met een cache per adres — ook van
+   een mislukking, want een lijst hertekent vaak. Lukt het niet, dan blijft de
+   platformnaam staan; er komt geen melding, want die zou bij vier links vier
+   keer verschijnen.
+3. **Het bannerteken** staat links, de ✕ rechts — in een rij én op een tegel.
+   24px zichtbaar, 44px tikgebied via het `::after`-patroon uit huisstijl §6.
+   De grens is **zes** items (Ronalds verwachting: vijf à zes), en die geldt
+   over foto's, video's en links samen: de banner toont één reeks.
+4. **Het mediascherm** (`openMediaSpeler()` in `utils.js`, `#mediaSpelerModal`
+   in `index.html`, binnen `#appRoot`). Een eigen video speelt in een
+   `<video>`, YouTube/Spotify/SoundCloud in een kader, en een platform dat
+   afspelen niet toelaat krijgt een scherm dat dat zegt met één knop naar dat
+   platform. Het kader wordt **pas na de tik** gebouwd — vóór die tik staat er
+   niets van een ander bedrijf in de pagina — en YouTube gaat via de
+   cookieloze variant.
+5. **Op het profiel opent een link niet meer de browser** maar hetzelfde
+   scherm. Dat was Ronalds tweede vraag.
+
+**Dode code meteen weg (§2.10).** `detectPlatform()` en `extractYouTubeId()`
+stonden in `wizard.js` en zijn verhuisd naar `utils.js` — niet gekopieerd. De
+CSS-klassen `.link-row`, `.link-type-badge` en `.link-row .song-remove` zijn
+verwijderd; niets gebruikt ze nog.
+
+**Twee dingen gemeten in het eigen resultaat en meteen hersteld.** Op de eerste
+schermafdruk had het adres een kader en 11px opvulling: `.media-rij-url` verloor
+van de algemene invoerveldregel, die specifieker is. Nu
+`.media-rij input.media-rij-url`. En "SoundCloud" werd in een miniatuur van
+56px weggesneden; die tekst breekt nu af in plaats van te verdwijnen.
+
+**Testset uitgebreid met blok 13:** 30 controles over de rijvorm, het
+bannerteken (plek, tikvlak, aan/uit), de teller, de grens van zes, het
+wegschrijven van `in_banner`, het afkappen van de naam en het mediascherm
+(cookieloze variant, modalstapeling, sluiten stopt het afspelen, uitleg bij een
+platform zonder speler). **Eindstand: 126 van 126 geslaagd.**
+
+**Correctie op een eerder vastgelegd plan (§2.13).** TT-262 beschreef de
+huisstijl-check als "blok 13 van de vaste testset". Dat nummer is vandaag
+gebruikt voor de mediahoek. TT-262 wordt **blok 14**; de rij hieronder is
+bijgewerkt. Het ging om een gepland nummer, niet om een gemeten feit, maar
+twee blokken 13 sturen de volgende sessie de verkeerde kant op.
+
+**Nog te doen, buiten dit ticket.** De bannerbalk op het profiel zelf bestaat
+nog niet (Ronald, 13-09-2026: *"die is er nog niet, maar volgt snel"*). Hier
+wordt alleen de keuze gemaakt en bewaard. En `huisstijl-en-consistentie.md`
+heeft nog geen paragraaf over het bannerteken, de media-rij en het
+mediascherm — zie het openstaande punt onderaan deze update.
+
+Gewijzigd: `utils.js`, `wizard.js`, `musicians.js`, `styles.css`,
+`index.html` (tellerregel in twee schermen, het mediascherm,
+versieachtervoegsels), `tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 12-09-2026 (vervolg) — **TT-247, TT-257 en TT-258 gebouwd en getest. Eindstand 96 van 96.**
 
 **Wat er is gebouwd.**
 1. **TT-247 — veldfouten, één component voor de hele app.** `setFieldError()`, `clearFieldError()`, `clearFieldErrors(bereik)` en `showFieldErrors(lijst)` in `utils.js`, met `.field-error` en `.field-msg` in `styles.css`. De foutregel wordt in JavaScript aangemaakt en weer opgeruimd — anders had elk veld in `index.html` een eigen lege `<p>` nodig, en zou een nieuw veld die stilzwijgend kunnen missen. Toegepast op: inloggen, wachtwoord vergeten, wachtwoord opnieuw instellen, stap 1 van de registratiewizard en het bandformulier (`saveBandRun()`).
@@ -2792,7 +2888,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-262** | Consistentie-check: de huisstijl wordt automatisch getoetst, niet op goed geluk gevonden | **Nieuw, 12-09-2026, besluit Ronald.** **Aanleiding, drie keer dezelfde soort fout op één dag:** (1) huisstijl §13.1 schreef rode tekst voor, in strijd met §1 van datzelfde document; (2) `--fs-sm` werd op zeven plekken gebruikt maar stond nergens in `:root`, waardoor hulptekst app-breed op 16px stond in plaats van 12px; (3) de eindstand "69 van 69" klopte niet, want één toets zocht naar een tekst die nooit in de code heeft gestaan. **Alle drie zijn per toeval gevonden** — bij het bouwen van iets anders. Dat is het probleem: de huisstijl is een document dat niemand tegen de code houdt, en niets meldt het als de twee uit elkaar lopen. **Wat de check moet doen, als blok 13 van de vaste testset** (statisch, geen browser nodig, dus snel): **(a)** elke `var(--...)` in `styles.css` verwijst naar een variabele die in `:root` bestaat — dit had TT-260 dezelfde dag gevonden; **(b)** elke variabele in `:root` wordt minstens één keer gebruikt — dit had de drie dode `--fs-*` tegengehouden die ik er vandaag zelf bij zette; **(c)** geen inline `style="font-size:..."`, `margin:` of `padding:` op een veld, label of hulptekst in `index.html` (§3 verbiedt dat al, maar er stonden er elf); **(d)** elke marge, opvulling en afstand in `styles.css` is een veelvoud van 4px (§3, TT-114) — met een lijst benoemde uitzonderingen, niet met een uitzondering per geval; **(e)** de lijst gebruikte lettermaten wordt geteld en afgezet tegen de schaal van TT-261; **(f)** `--danger` komt niet voor als `color:` op een gewone tekstregel (§1.2); **(g)** `--accent` komt niet voor als vlak onder 50% dekking (§1.1) — dit had de gouden focusgloed van TT-259 gevonden; **(h)** geen losse `z-index` op een `.modal-overlay` (§2.11 en TT-229). **Wat de check bewust níét doet:** oordelen over smaak. Hij toetst alleen regels die letterlijk in `huisstijl-en-consistentie.md` staan, en meldt per bevinding welke paragraaf hij aanhaalt. **Een gezakte controle is geen fout in de code maar een vraag:** of de code klopt niet, of de regel klopt niet (§2.11). **Toets P2:** de app werkt zonder deze check. Maar drie vastgelegde feiten die niet klopten in één dag betekent dat de huisstijl vertrouwen verliest, en een standaard die niemand vertrouwt stuurt elke volgende sessie de verkeerde kant op — dezelfde redenering als §2.13. **Hangt samen met TT-261:** punt (e) heeft die schaal nodig. De rest kan los |
+| **TT-263** | Je mediahoek liet niet zien welke link welke video is | **Gebouwd en getest 13-09-2026.** Aanleiding: Ronald — *"gebruiker kan niet zien welke link welke video is."* Een rij toonde alleen een platformbadge en een adres. Nu: miniatuur, naam van de video (via oEmbed, gemeten werkend voor YouTube, Spotify, SoundCloud en TikTok; Instagram laat het niet toe), een bannerteken om te kiezen wat in de bannerbalk op het profiel komt (grens zes, over foto's, video's en links samen), en afspelen binnen de app in plaats van in de browser. `musician_media.in_banner` is op verzoek toegevoegd door Ronald. **De bannerbalk zelf is er nog niet** — die volgt, hier wordt alleen de keuze bewaard. **Toets P2:** het werkte, maar het kostte moeite en vertrouwen — je wist niet welke van vier links je weggooide. Zie Deel 3, 13-09-2026 |
+| **TT-262** | Consistentie-check: de huisstijl wordt automatisch getoetst, niet op goed geluk gevonden | **Nieuw, 12-09-2026, besluit Ronald.** **Aanleiding, drie keer dezelfde soort fout op één dag:** (1) huisstijl §13.1 schreef rode tekst voor, in strijd met §1 van datzelfde document; (2) `--fs-sm` werd op zeven plekken gebruikt maar stond nergens in `:root`, waardoor hulptekst app-breed op 16px stond in plaats van 12px; (3) de eindstand "69 van 69" klopte niet, want één toets zocht naar een tekst die nooit in de code heeft gestaan. **Alle drie zijn per toeval gevonden** — bij het bouwen van iets anders. Dat is het probleem: de huisstijl is een document dat niemand tegen de code houdt, en niets meldt het als de twee uit elkaar lopen. **Wat de check moet doen, als blok 14 van de vaste testset** *(was blok 13; dat nummer is op 13-09-2026 gebruikt voor de mediahoek, TT-263)* (statisch, geen browser nodig, dus snel): **(a)** elke `var(--...)` in `styles.css` verwijst naar een variabele die in `:root` bestaat — dit had TT-260 dezelfde dag gevonden; **(b)** elke variabele in `:root` wordt minstens één keer gebruikt — dit had de drie dode `--fs-*` tegengehouden die ik er vandaag zelf bij zette; **(c)** geen inline `style="font-size:..."`, `margin:` of `padding:` op een veld, label of hulptekst in `index.html` (§3 verbiedt dat al, maar er stonden er elf); **(d)** elke marge, opvulling en afstand in `styles.css` is een veelvoud van 4px (§3, TT-114) — met een lijst benoemde uitzonderingen, niet met een uitzondering per geval; **(e)** de lijst gebruikte lettermaten wordt geteld en afgezet tegen de schaal van TT-261; **(f)** `--danger` komt niet voor als `color:` op een gewone tekstregel (§1.2); **(g)** `--accent` komt niet voor als vlak onder 50% dekking (§1.1) — dit had de gouden focusgloed van TT-259 gevonden; **(h)** geen losse `z-index` op een `.modal-overlay` (§2.11 en TT-229). **Wat de check bewust níét doet:** oordelen over smaak. Hij toetst alleen regels die letterlijk in `huisstijl-en-consistentie.md` staan, en meldt per bevinding welke paragraaf hij aanhaalt. **Een gezakte controle is geen fout in de code maar een vraag:** of de code klopt niet, of de regel klopt niet (§2.11). **Toets P2:** de app werkt zonder deze check. Maar drie vastgelegde feiten die niet klopten in één dag betekent dat de huisstijl vertrouwen verliest, en een standaard die niemand vertrouwt stuurt elke volgende sessie de verkeerde kant op — dezelfde redenering als §2.13. **Hangt samen met TT-261:** punt (e) heeft die schaal nodig. De rest kan los |
 | **TT-261** | Er is geen typografische schaal — veertien lettermaten door elkaar | **Nieuw, 12-09-2026. Aanleiding: Ronald — *"waarom 15px en niet een veelvoud van 4? de UI specialist gaat hiervan huilen."*** **Geverifieerd, geteld in `styles.css`:** de app gebruikt **veertien** verschillende lettermaten — 10px (6×), 11px (20×), 12px (25×), 13px (22×), 14px (18×), 15px (8×), 16px (9×), 17px (2×), 18px (3×), 20px (3×), 22px (2×), 28px (4×), 36px en 48px. Dat is geen schaal maar een lijst getallen; 11, 13, 14 en 17 zitten er alle vier tussen en verschillen onderling nauwelijks. **Huisstijl §3 (TT-114) legt de 4px-schaal vast voor marge, opvulling en afstand — niet voor letters.** Dat is de reden dat 15px geen regel overtrad, maar het is geen verdediging: een schaal hoort er te zijn, en Ronald wil hem op de 4px-schaal. **Voorstel: 12 · 16 · 20 · 24 · 28 · 36 · 48.** Twee uitzonderingen die benoemd moeten worden: een invoerveld blijft **16px** (onder 16px zoomt iOS Safari in bij focus en zoomt niet terug uit — zie §7), en `.wheel-unit` staat op 15px. **Toets P2:** het werkt en het is leesbaar, maar vier maten die nauwelijks verschillen maken het beeld onrustig zonder dat iemand kan aanwijzen waarom. **Eerst een visueel voorbeeld**, dan pas bouwen — 20 plekken op 11px en 22 op 13px gaan zichtbaar verschuiven. Niet halfslachtig doorvoeren |
 | **TT-260** | `--fs-sm` bestond niet, hulptekst stond op drie maten door elkaar | **OPGELOST 12-09-2026.** Aanleiding: Ronald — *"waarom kan je de standaard niet vasthouden?"* Terecht. Ik had dit als keuze voorgelegd terwijl §2.11 zegt dat een afwijking in de standaard wordt opgelost, niet per scherm omzeild — en ik had die regel zelf óók omzeild door in `.field-msg` en `.field-hint` `12px` voluit te schrijven. **Wat er mis was, geverifieerd:** `styles.css` gebruikte `var(--fs-sm)` op drie plekken, maar geen van de vier `--fs-*`-maten uit huisstijl §2 stond in `:root`. Een verwijzing naar een niet-bestaande variabele maakt de hele regel ongeldig, dus die tekst erfde 16px van zijn ouder. Waar iemand ooit een eigen inline maat had neergezet, was het 11px. **Gemeten vóór de fix:** hulptekst stond op 11px, 12px én 16px door elkaar; geen van de drie was de 12px uit de huisstijl. **Opgelost:** `--fs-sm` (12px) staat nu in `:root`. **Correctie zelfde sessie, na een vraag van Ronald — *"waarom 15px en niet een veelvoud van 4?"*:** ik had er ook `--fs-md` 15px, `--fs-lg` 28px en `--fs-display` bij gezet, puur omdat de huisstijl ze noemde. **Geverifieerd: geen enkele regel in `styles.css` gebruikte die drie** — dat is dode code, en 15px staat bovendien niet op de 4px-schaal. Alle drie dezelfde sessie weer weggehaald (§2.10). Alleen `--fs-sm` blijft; die wordt zeven keer gebruikt en 12px staat wél op de schaal. Elf inline `font-size:11px`-hulpteksten in `index.html` zijn vervangen door de klassen `.field-hint` en `.field-status` (§3: nooit een inline maat op een veld of label). `.field-status` ging van 11px/5px/14px naar `var(--fs-sm)`/4px/16px — 5px en 14px stonden niet op de 4px-schaal. `.field-msg` en `.field-hint` gebruiken nu de variabele in plaats van het losse getal. **Gemeten na de fix:** `.field-hint`, `.field-status`, `.wheel-hint` en `.field > p` staan alle vier op **12px**, één maat. De eenheidkolom in het wiel (`.wheel-unit`) heeft een eigen maat en blijft 15px. **Testset: 96 van 96 geslaagd.** Zie ook `tt260-1-hulptekst.png` en `tt260-2-wiel.png` in de gedeelde map |
 | **TT-259** | De focusrand van elk veld gebruikt goud op 10% dekking | **Nieuw, 12-09-2026, los gevonden bij TT-247.** **Geverifieerd in `styles.css:300`:** `input:focus, select:focus, textarea:focus` krijgt `box-shadow: 0 0 0 3px rgba(245,197,24,0.1)`. Huisstijl §1.1 (TT-256, 11-09-2026) legt vast dat goud onder 50% dekking op een bijna-zwarte ondergrond olijfbruin wordt — precies deze waarde is daar het rekenvoorbeeld. Ook `.delete-band-choice:focus` (`styles.css:337`) gebruikt hem. **Toets P2:** het werkt en het veld krijgt zichtbaar de aandacht, maar de gloed eromheen oogt modderig in plaats van goud. **Oplossing volgens §1.1:** de gouden rand blijft, de gloed wordt wit op 5% of vervalt. Raakt élk veld in de app, dus één wijziging op `:root`-niveau, nooit per scherm (§2.11) |

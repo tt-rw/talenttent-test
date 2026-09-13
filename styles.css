@@ -1260,30 +1260,242 @@
     letter-spacing: 0.5px;
   }
 
-  /* Link rows */
-  .link-row {
+  /* ── Media: rijen, tegels en het bannerteken (TT-263, 13-09-2026) ──────
+     .link-row en .link-type-badge stonden hier tot 13-09-2026. Een rij met
+     alleen een badge en een adres liet niet zien welke link welke video was
+     (Ronald). Ze zijn vervangen door .media-rij en niet blijven staan. */
+
+  .banner-teller {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    margin: 0 0 10px;
+    line-height: 1.4;
+  }
+  .banner-teller b { color: var(--text); }
+
+  /* Het bannerteken: een cirkel met de vorm van de banner erin. Gekozen is
+     goud gevuld met de vorm in bijna-zwart; niet gekozen is een omtrek zonder
+     vulling. Goud staat hier als vlak onder een donkere vorm — nooit
+     doorschijnend, zie §1.1 van de huisstijl. */
+  .banner-btn {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    position: relative;
+    cursor: pointer;
+    line-height: 0;
+  }
+  .banner-btn svg { width: 24px; height: 24px; display: block; }
+  .banner-btn .bb-schijf { fill: none; stroke: var(--text); stroke-width: var(--line); }
+  .banner-btn .bb-vorm   { fill: none; stroke: var(--text); stroke-width: var(--line); }
+  .banner-btn.op-beeld .bb-schijf { fill: rgba(0,0,0,0.65); }
+  .banner-btn[aria-pressed="true"] .bb-schijf { fill: var(--accent); stroke: var(--accent); }
+  .banner-btn[aria-pressed="true"] .bb-vorm   { stroke: var(--bg); }
+  /* Tikvlak van 44px zonder het teken zelf groter te maken — hetzelfde
+     ::after-patroon als de i-knop. */
+  .banner-btn::after {
+    content: "";
+    position: absolute;
+    top: -10px; right: -10px; bottom: -10px; left: -10px;
+  }
+
+  .media-rij {
     display: flex;
     gap: 10px;
-    margin-bottom: 10px;
     align-items: center;
-    animation: slideIn 0.2s ease;
-  }
-
-  .link-row input { flex: 1; }
-
-  .link-type-badge {
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 10px;
     background: var(--surface2);
     border: 1px solid var(--border);
-    white-space: nowrap;
-    color: var(--muted);
-    min-width: 70px;
+    border-radius: 8px;
+    animation: slideIn 0.2s ease;
+  }
+  .media-rij.in-banner { border-color: var(--accent); }
+
+  .media-mini {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .media-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .media-mini[disabled] { cursor: default; }
+  /* Een platformnaam moet in 56px passen: "SoundCloud" past niet op één
+     regel, dus breekt hij af in plaats van weggesneden te worden. */
+  .media-mini-platform {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text);
     text-align: center;
+    padding: 2px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
   }
 
-  .link-row .song-remove { flex-shrink: 0; }
+  .media-rij-tekst { min-width: 0; flex: 1; }
+  /* Eén regel, afgekapt met één beletselteken. Een tik vouwt de naam uit
+     (besluit Ronald 13-09-2026); op een bureaublad verschijnt hij daarnaast
+     als label bij aanwijzen, via het title-attribuut. */
+  .media-rij-titel {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .media-rij-titel.open { white-space: normal; overflow: visible; }
+  /* Het adres blijft altijd bewerkbaar, maar leest als bijschrift tot je erin
+     tikt. Zo staat er niets verborgen achter een extra knop. */
+  /* Specifieker dan de algemene invoervelden hierboven (§ regel 295), anders
+     wint die en staat er alsnog een kader om het adres. Gemeten 13-09-2026:
+     met alleen .media-rij-url kreeg het adres een rand en 11px opvulling. */
+  .media-rij input.media-rij-url {
+    width: 100%;
+    margin-top: 2px;
+    padding: 0;
+    font-size: var(--fs-sm);
+    font-family: 'Roboto', sans-serif;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    text-overflow: ellipsis;
+  }
+  .media-rij input.media-rij-url:focus {
+    outline: none;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+  }
+  .media-rij-weg {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+  }
+  .media-rij-weg::after {
+    content: "";
+    position: absolute;
+    top: -6px; right: -6px; bottom: -6px; left: -6px;
+  }
+
+  /* Tegel in het tabblad Upload: bannerteken linksboven, ✕ rechtsboven. */
+  .media-thumb.in-banner { border-color: var(--accent); }
+  .media-thumb .banner-btn { position: absolute; top: 4px; left: 4px; z-index: 3; }
+  .media-thumb-open {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: block;
+  }
+  .media-thumb-video {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .media-thumb-laden {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.4);
+    z-index: 2;
+  }
+  .media-thumb-laden .save-spinner { width: 20px; height: 20px; border-width: 3px; margin: 0; }
+
+  /* ── Het mediascherm ──────────────────────────────────────────────────── */
+  .media-speler-box {
+    padding: 0;
+    overflow: hidden;
+    width: min(720px, 100%);
+  }
+  .media-speler-kop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .media-speler-titel {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .media-speler-sluit {
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .media-speler-beeld {
+    aspect-ratio: 16 / 9;
+    background: #000;
+    position: relative;
+  }
+  .media-speler-beeld iframe,
+  .media-speler-beeld video { width: 100%; height: 100%; display: block; border: 0; }
+  .media-speler-uitleg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    text-align: center;
+    background: var(--surface2);
+  }
+  .media-speler-uitleg p { font-size: var(--fs-sm); color: var(--muted); margin: 0; line-height: 1.4; }
+  .media-speler-platform { font-size: 14px; font-weight: 700; }
+  .media-speler-voet { display: flex; gap: 8px; padding: 12px 14px; background: var(--surface); }
+  .media-speler-voet:empty { display: none; }
+  .media-speler-knop {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: var(--line) solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+  }
+  .media-speler-knop.primair { background: var(--accent); color: #000; border-color: var(--accent); }
 
   .add-link-btn {
     background: transparent;

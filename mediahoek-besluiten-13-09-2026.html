@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Je mediahoek — alle besluiten (13-09-2026)</title>
+<style>
+  :root{--bg:#0d0d0d;--surface:#161616;--surface2:#1e1e1e;--border:#2a2a2a;--accent:#f5c518;
+    --accent2:#6ec8d8;--danger:#e5533d;--success:#4caf50;--text:#f0f0f0;--muted:#888;--radius:12px;--line:1.5px;--fs-sm:12px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Roboto',system-ui,sans-serif;padding:24px 16px 72px}
+  h1{font-size:22px;font-weight:700;margin:0 0 4px}
+  h2{font-size:17px;font-weight:700;margin:0 0 6px}
+  h2 .nr{color:var(--accent);margin-right:6px}
+  .lede{color:var(--muted);font-size:var(--fs-sm);max-width:820px;margin:0 0 10px;line-height:1.55}
+  .rij{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .kolom{width:360px;max-width:100%}
+  .smal{width:300px}
+  .telefoon{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .let{margin-top:10px;font-size:var(--fs-sm);color:var(--muted);line-height:1.55}
+  .let b{color:var(--text)}
+  hr{border:0;border-top:1px solid var(--border);margin:34px 0 24px}
+  .paneel-titel{font-size:17px;font-weight:700;margin-bottom:4px}
+  .paneel-sub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:14px;line-height:1.4}
+  .media-tabs{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+  .media-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);border:none;background:transparent;font-family:inherit}
+  .media-tab.active{background:var(--surface);color:var(--text)}
+  .bannerregel{font-size:var(--fs-sm);color:var(--muted);margin:0 0 10px;line-height:1.4}
+  .bannerregel b{color:var(--text)}
+
+  .still{width:100%;height:100%;position:relative;display:block;background:linear-gradient(135deg,#3a2f4a 0%,#1d2c3a 55%,#123 100%)}
+  .still.b{background:linear-gradient(135deg,#4a3a2a 0%,#2a1d1d 60%,#151515 100%)}
+  .still.c{background:linear-gradient(135deg,#23404a 0%,#1a2a2a 55%,#101414 100%)}
+  .still.d{background:linear-gradient(135deg,#2b3a2b 0%,#1a2419 55%,#101410 100%)}
+  .still::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:0;height:0;
+    border-left:9px solid rgba(255,255,255,.85);border-top:6px solid transparent;border-bottom:6px solid transparent}
+  .still.geenplay::after{display:none}
+
+  /* ── het bannerteken ───────────────────────────────────────────── */
+  .bannerknop{width:24px;height:24px;flex-shrink:0;border:none;background:transparent;padding:0;display:block;position:relative}
+  .bannerknop svg{display:block;width:24px;height:24px}
+  .groot .bannerknop,.groot .bannerknop svg{width:56px;height:56px}
+  .tikdoel::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px}
+
+  .kaartrij{display:flex;gap:10px;align-items:center;padding:8px;background:var(--surface2);
+    border:1px solid var(--border);border-radius:8px;margin-bottom:10px;position:relative}
+  .kaartrij.gekozen{border-color:var(--accent)}
+  .mini{width:56px;height:56px;border-radius:6px;overflow:hidden;flex-shrink:0;border:1px solid var(--border)}
+  .tekst{min-width:0;flex:1}
+  .titel{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .titel.open{white-space:normal;overflow:visible}
+  .url{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .weg32{flex-shrink:0;width:32px;height:32px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:13px}
+  .tip{position:absolute;left:76px;right:44px;top:-6px;transform:translateY(-100%);background:#000;border:1px solid var(--border);
+    border-radius:6px;padding:6px 8px;font-size:11px;line-height:1.35;color:var(--text);opacity:0;pointer-events:none;transition:opacity .15s;z-index:4}
+  .demo-hover:hover .tip{opacity:1}
+  .tip.vast{opacity:1}
+
+  .tegels{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
+  .tegel{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--surface2);border:1px solid var(--border)}
+  .tegel.gekozen{border-color:var(--accent)}
+  .tegel .hoek-links{position:absolute;top:4px;left:4px;z-index:3}
+  .tegel .weg{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;z-index:3}
+  .tegel .soort{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.7);font-size:10px;padding:2px 5px;border-radius:3px;color:var(--muted);letter-spacing:.5px}
+  .tegel.geen-beeld{display:flex;align-items:center;justify-content:center}
+  .tegel.geen-beeld .naam{font-size:12px;font-weight:700}
+  .toevoegen{background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;padding:10px;width:100%;font-family:inherit}
+  .tegel-toevoegen{aspect-ratio:1;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center}
+  .knoprij{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-top:18px}
+  .btn{padding:13px;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;border:var(--line) solid transparent}
+  .btn-ghost{background:transparent;border-color:var(--border);color:var(--text)}
+  .btn-primary{background:var(--accent);color:#000;border-color:var(--accent)}
+
+  .speler{background:#000;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .speler-kop{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface)}
+  .speler-kop .t{flex:1;min-width:0;font-size:14px;font-weight:700}
+  .speler-kop .x{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text)}
+  .speler-beeld{aspect-ratio:16/9;position:relative}
+  .speler-voet{display:flex;gap:8px;padding:12px 14px;background:var(--surface)}
+  .speler-voet .knop{flex:1;padding:10px;border-radius:8px;border:var(--line) solid var(--border);background:transparent;color:var(--text);font-size:13px;font-weight:700;text-align:center}
+
+  table{border-collapse:collapse;width:100%;max-width:820px;font-size:var(--fs-sm);margin-top:8px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--surface2);font-weight:700}
+  .label{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.4px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);color:var(--muted);margin-right:6px}
+  .label.ok{color:var(--success);border-color:var(--success)}
+  .label.aan{color:var(--accent);border-color:var(--accent)}
+  .label.on{color:var(--accent2);border-color:var(--accent2)}
+  .staal{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;margin-top:6px}
+  .staal figure{margin:0;text-align:center;width:110px}
+  .staal figcaption{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.35}
+  .vlak{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;align-items:center;justify-content:center;height:88px}
+  ol{font-size:var(--fs-sm);color:var(--muted);line-height:1.7;max-width:820px;padding-left:20px}
+  ol b{color:var(--text)}
+  code{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11px}
+</style>
+</head>
+<body>
+
+<h1>Je mediahoek — alle besluiten bij elkaar</h1>
+<p class="lede">Variant B, tik vouwt een lange naam uit (M1), en het vinkje is vervangen door een bannerteken in eigen goud. Miniaturen zijn nagebootst zodat deze pagina ook zonder internet klopt.</p>
+
+<hr>
+
+<h2><span class="nr">1.</span> Het bannerteken</h2>
+<p class="lede"><b>In de app bestaat nog geen bannericoon</b> — geverifieerd: de app heeft negen tekeningen (zoeken, persoon, personen, envelop, hamburger, vinkje, ⋯-menu, berichtje, foutmelding) en een banner zit er niet bij. Dit is dus een nieuw teken. Vorm: een cirkel met daarin een liggende afgeronde rechthoek — de banner zelf. Gekozen is goud gevuld met de vorm in bijna-zwart; niet gekozen is leeg met een witte omtrek. Goud als vlak onder een donkere vorm is precies waarvoor het goud bedoeld is (huisstijl §1.1); goud op lage dekking komt er niet aan te pas.</p>
+
+<div class="staal groot">
+  <figure>
+    <div class="vlak">
+      <span class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="none" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></span>
+    </div>
+    <figcaption><b style="color:var(--text)">Niet in je banner</b><br>omtrek wit, geen vulling</figcaption>
+  </figure>
+  <figure>
+    <div class="vlak">
+      <span class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></span>
+    </div>
+    <figcaption><b style="color:var(--text)">In je banner</b><br>goud gevuld, vorm in bijna-zwart</figcaption>
+  </figure>
+  <figure>
+    <div class="vlak" style="background:#0d0d0d">
+      <span class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.65)" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></span>
+    </div>
+    <figcaption><b style="color:var(--text)">Op een foto</b><br>donker schijfje eronder, zodat hij op elk beeld leesbaar blijft</figcaption>
+  </figure>
+  <figure style="width:230px">
+    <div class="vlak" style="justify-content:flex-start;gap:14px;padding:14px 18px">
+      <span class="bannerknop" style="width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:24px;height:24px"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></span>
+      <span class="bannerknop" style="width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:24px;height:24px"><circle cx="12" cy="12" r="11" fill="none" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></span>
+    </div>
+    <figcaption>Ware grootte: <b style="color:var(--text)">24px</b> zichtbaar, <b style="color:var(--text)">44px</b> tikgebied</figcaption>
+  </figure>
+</div>
+
+<hr>
+
+<h2><span class="nr">2.</span> Het tabblad Links — variant B</h2>
+<div class="rij">
+  <div class="kolom">
+    <div class="telefoon">
+      <div class="paneel-titel">Foto's, video's en links</div>
+      <div class="paneel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
+      <div class="media-tabs"><button class="media-tab">Upload</button><button class="media-tab active">Links</button></div>
+      <p class="bannerregel"><b>Kies wat in je banner komt.</b> Gekozen: 2</p>
+
+      <div class="kaartrij gekozen">
+        <button class="bannerknop tikdoel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still"></div></div>
+        <div class="tekst"><div class="titel" onclick="this.classList.toggle('open')">Live @ Paard Den Haag — Summer Session 2026</div><div class="url">youtu.be/tAGnKpE4Nxk</div></div>
+        <button class="weg32">✕</button>
+      </div>
+
+      <div class="kaartrij">
+        <button class="bannerknop tikdoel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="none" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still b"></div></div>
+        <div class="tekst"><div class="titel" onclick="this.classList.toggle('open')">Drumsolo take 3</div><div class="url">youtu.be/XmIqIVxUuQ8</div></div>
+        <button class="weg32">✕</button>
+      </div>
+
+      <div class="kaartrij gekozen">
+        <button class="bannerknop tikdoel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still c"></div></div>
+        <div class="tekst"><div class="titel" onclick="this.classList.toggle('open')">Repetitie — nieuw nummer</div><div class="url">youtu.be/4Sc81yxo6Gk</div></div>
+        <button class="weg32">✕</button>
+      </div>
+
+      <div class="kaartrij">
+        <button class="bannerknop tikdoel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="none" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></button>
+        <div class="mini" style="display:flex;align-items:center;justify-content:center;background:var(--surface2)"><span style="font-size:11px;font-weight:700">SC</span></div>
+        <div class="tekst"><div class="titel">SoundCloud</div><div class="url">soundcloud.com/…</div></div>
+        <button class="weg32">✕</button>
+      </div>
+
+      <button class="toevoegen">+ Link toevoegen</button>
+      <div class="knoprij"><button class="btn btn-ghost">Terug</button><button class="btn btn-primary">Opslaan</button></div>
+    </div>
+    <p class="let">Vier tikdoelen per rij, elk apart: <b>bannerteken</b> · <b>miniatuur</b> (speelt af) · <b>naam</b> (vouwt uit) · <b>✕</b> (verwijdert). Een gekozen rij krijgt een gouden rand, zodat de keuze ook zichtbaar is zonder het teken te lezen.</p>
+  </div>
+
+  <div class="kolom">
+    <h2 style="font-size:15px">Hetzelfde teken in het tabblad Upload</h2>
+    <p class="let" style="margin-top:0">De banner kiest uit álle media, dus foto's en eigen video's krijgen hetzelfde teken op dezelfde plek: linksboven, de ✕ blijft rechtsboven.</p>
+    <div class="telefoon">
+      <div class="media-tabs"><button class="media-tab active">Upload</button><button class="media-tab">Links</button></div>
+      <p class="bannerregel"><b>Kies wat in je banner komt.</b> Gekozen: 1</p>
+      <div class="tegels">
+        <div class="tegel gekozen"><div class="still d geenplay"></div>
+          <span class="hoek-links"><span class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></span></span>
+          <button class="weg">✕</button><div class="soort">foto</div></div>
+        <div class="tegel"><div class="still geenplay"></div>
+          <span class="hoek-links"><span class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.65)" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></span></span>
+          <button class="weg">✕</button><div class="soort">foto</div></div>
+        <div class="tegel"><div class="still b"></div>
+          <span class="hoek-links"><span class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="rgba(0,0,0,.65)" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></span></span>
+          <button class="weg">✕</button><div class="soort">video</div></div>
+        <div class="tegel-toevoegen">+</div>
+      </div>
+    </div>
+    <p class="let">Dit tabblad wordt in dit ticket verder niet verbouwd — alleen het teken komt erbij, op dezelfde plek en in dezelfde vorm.</p>
+  </div>
+</div>
+
+<hr>
+
+<h2><span class="nr">3.</span> Een naam die niet past</h2>
+<div class="rij">
+  <div class="kolom">
+    <p class="let" style="margin-top:0"><b>Bureaublad.</b> Eén regel, afgekapt met …, en het volledige label verschijnt bij aanwijzen. Beweeg met de muis over de rij hieronder.</p>
+    <div class="telefoon">
+      <div class="kaartrij demo-hover">
+        <button class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still"></div></div>
+        <div class="tekst"><div class="titel">Live @ Paard Den Haag — Summer Session 2026, volledige set</div><div class="url">youtu.be/tAGnKpE4Nxk</div></div>
+        <button class="weg32">✕</button>
+        <div class="tip">Live @ Paard Den Haag — Summer Session 2026, volledige set</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kolom">
+    <p class="let" style="margin-top:0"><b>Telefoon (M1).</b> Eén regel, afgekapt met …. Tik op de naam en hij vouwt uit; nog een tik vouwt hem dicht. Tik hieronder maar.</p>
+    <div class="telefoon">
+      <div class="kaartrij">
+        <button class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still"></div></div>
+        <div class="tekst"><div class="titel" onclick="this.classList.toggle('open')">Live @ Paard Den Haag — Summer Session 2026, volledige set</div><div class="url">youtu.be/tAGnKpE4Nxk</div></div>
+        <button class="weg32">✕</button>
+      </div>
+      <div class="kaartrij">
+        <button class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="none" stroke="#f0f0f0" stroke-width="1.5"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#f0f0f0" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still b"></div></div>
+        <div class="tekst"><div class="titel" onclick="this.classList.toggle('open')">Drumsolo take 3</div><div class="url">youtu.be/XmIqIVxUuQ8</div></div>
+        <button class="weg32">✕</button>
+      </div>
+    </div>
+    <p class="let">Alle rijen zijn even hoog, behalve de ene die de gebruiker zelf openzet.</p>
+  </div>
+
+  <div class="kolom smal">
+    <p class="let" style="margin-top:0"><b>Eén punt om te kiezen.</b> Je koos M1 omdat de rijen dan even hoog blijven. Uitvouwen maakt die ene rij tijdelijk tóch hoger. Het kan ook zó dat de hoogte nooit verandert: de tik laat hetzelfde labeltje zien als op het bureaublad, over de rij heen.</p>
+    <div class="telefoon">
+      <div class="kaartrij" style="margin-top:34px">
+        <button class="bannerknop"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#f5c518"/><rect x="5.5" y="8.5" width="13" height="7" rx="2" fill="none" stroke="#0d0d0d" stroke-width="1.5"/></svg></button>
+        <div class="mini"><div class="still"></div></div>
+        <div class="tekst"><div class="titel">Live @ Paard Den Haag — Summer Session 2026, volledige set</div><div class="url">youtu.be/tAGnKpE4Nxk</div></div>
+        <button class="weg32">✕</button>
+        <div class="tip vast">Live @ Paard Den Haag — Summer Session 2026, volledige set</div>
+      </div>
+    </div>
+    <p class="let">Zelfde teken, zelfde plek, hoogte blijft gelijk — en het gedrag is op telefoon en bureaublad letterlijk hetzelfde.</p>
+  </div>
+</div>
+
+<hr>
+
+<h2><span class="nr">4.</span> Afspelen in de app</h2>
+<div class="rij">
+  <div class="kolom">
+    <div class="speler">
+      <div class="speler-kop"><span class="t">Live @ Paard — Summer Session</span><button class="x">✕</button></div>
+      <div class="speler-beeld"><div class="still geenplay" style="position:absolute;inset:0"></div>
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.9)">
+          <span style="position:absolute;left:53%;top:50%;transform:translate(-50%,-50%);border-left:17px solid #000;border-top:11px solid transparent;border-bottom:11px solid transparent"></span></div>
+      </div>
+      <div class="speler-voet"><span class="knop">Openen op YouTube</span><span class="knop">Delen</span></div>
+    </div>
+    <p class="let">De volledige naam staat altijd in de kop — ook als hij in de lijst is afgekapt.</p>
+  </div>
+  <div class="kolom" style="width:440px">
+    <table>
+      <tr><th>Soort</th><th>In de app</th></tr>
+      <tr><td>Eigen upload, foto</td><td><span class="label ok">GEVERIFIEERD</span> speelt/opent nu al in de pagina</td></tr>
+      <tr><td>YouTube</td><td><span class="label aan">AANNAME</span> speelt in een kader; een uploader kan het per video uitzetten</td></tr>
+      <tr><td>Spotify · SoundCloud</td><td><span class="label on">ONBEKEND</span> hebben een speler zonder sleutel, nog niet gemeten</td></tr>
+      <tr><td>Instagram · TikTok</td><td><span class="label on">ONBEKEND</span> vermoedelijk alleen extern openen</td></tr>
+      <tr><td>Naam van de video</td><td><span class="label on">ONBEKEND</span> los op te halen bij <code>youtube.com/oembed</code>; werkt dat niet, dan vervalt de naam en blijft beeld + platformnaam over</td></tr>
+    </table>
+    <p class="let">Alles wat hier <b>aanname</b> of <b>onbekend</b> heet, meet ik op de echte site vóór er één regel code wijzigt. Wat niet speelt, krijgt een scherm dat dat zegt plus één knop "Openen op …".</p>
+  </div>
+</div>
+
+<hr>
+
+<h2><span class="nr">5.</span> De besluiten op een rij</h2>
+<ol>
+  <li><b>Variant B</b> — links worden rijen met miniatuur, naam en adres. Het tabblad Upload houdt zijn tegelraster.</li>
+  <li><b>Bannerteken in plaats van een vinkje</b> — cirkel met een liggende afgeronde rechthoek erin. Gekozen: goud gevuld, vorm in bijna-zwart. Niet gekozen: witte omtrek, geen vulling. Op een foto komt er een donker schijfje onder.</li>
+  <li><b>Dit teken bestaat nog niet in de app</b> — geverifieerd; het wordt het tiende teken en komt in dezelfde lijnstijl als de bestaande negen.</li>
+  <li><b>Plaats</b> — bannerteken altijd links, ✕ altijd rechts. In een rij én op een tegel. 24px zichtbaar, 44px tikgebied.</li>
+  <li><b>Hetzelfde teken op de Upload-tegels</b> — de banner kiest uit alle media, dus de regel geldt aan beide kanten gelijk.</li>
+  <li><b>Lange naam</b> — één regel, afgekapt met één beletselteken (…). Bureaublad: label bij aanwijzen. Telefoon: tik (M1).</li>
+  <li><b>Afspelen gebeurt in de app</b>, in één scherm bovenop het profiel, met de volledige naam in de kop. De miniatuur is de knop; de speler laadt pas na de tik.</li>
+  <li><b>Nog te meten vóór het bouwen</b> — of YouTube in een kader speelt, of de naam op te halen is, en wat Spotify en SoundCloud toelaten.</li>
+  <li><b>Buiten dit ticket</b> — de bannerbalk op het profiel zelf. Hier wordt alleen de keuze gemaakt en bewaard.</li>
+</ol>
+
+</body>
+</html>

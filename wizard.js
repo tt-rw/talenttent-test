@@ -360,6 +360,7 @@ async function persistEditedProfile() {
       media_type:  'link',
       url:         l.url,
       platform:    detectPlatform(l.url),
+      in_banner:   !!l.inBanner,
     }));
   if (linkMedia.length) {
     const { error: lErr } = await db.from('musician_media').insert(linkMedia);
@@ -372,6 +373,7 @@ async function persistEditedProfile() {
       musician_id: mid,
       media_type:  m.type,
       url:         m.url,
+      in_banner:   !!m.inBanner,
     }));
   if (fileMedia.length) {
     const { error: fErr } = await db.from('musician_media').insert(fileMedia);
@@ -537,6 +539,7 @@ async function submitProfile() {
         media_type:  'link',
         url:         l.url,
         platform:    detectPlatform(l.url),
+        in_banner:   !!l.inBanner,
       }));
 
     if (linkMedia.length) {
@@ -553,6 +556,7 @@ async function submitProfile() {
         musician_id: mid,
         media_type:  m.type,
         url:         m.url,
+        in_banner:   !!m.inBanner,
       }));
     if (fileMedia.length) {
       const { error: fErr } = await db.from('musician_media').insert(fileMedia);
@@ -1241,7 +1245,7 @@ function handleFileSelect(files) {
 
     const blobUrl = URL.createObjectURL(file);
     const type = isVideo ? 'video' : 'foto';
-    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true };
+    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true, inBanner: false };
     state.mediaFiles.push(entry);
     renderMediaGrid();
 
@@ -1270,18 +1274,26 @@ function handleFileSelect(files) {
 
 function renderMediaGrid() {
   const grid = document.getElementById('mediaGrid');
-  grid.innerHTML = state.mediaFiles.map((m,i) => `
-    <div class="media-thumb">
-      ${m.type === 'foto'
-        ? `<img src="${safeUrl(m.url)}" alt="${escHtml(m.name)}">`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Video</div>`
-      }
-      ${m.uploading ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);"><div class="save-spinner" style="width:20px;height:20px;border-width:3px;margin:0;"></div></div>` : ''}
-      <div class="thumb-type">${escHtml(m.type)}</div>
-      <button class="thumb-remove" onclick="removeMedia(${i})">✕</button>
-    </div>
-  `).join('');
+  grid.innerHTML = state.mediaFiles.map((m, i) => mediaTegelHTML(m, i, '')).join('');
+  bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
   updateOptionalStepHints();
+}
+
+// TT-263: welke media in de bannerbalk op het profiel komt, kiest de
+// gebruiker hier. De grens geldt over foto's, video's en links samen.
+function toggleMediaBanner(i) {
+  const m = state.mediaFiles[i];
+  if (!m) return;
+  if (!bannerKeuzeMag(bannerAantal(state.mediaFiles, state.mediaLinks), !m.inBanner)) return;
+  m.inBanner = !m.inBanner;
+  renderMediaGrid();
+}
+
+function speelMedia(i) {
+  const m = state.mediaFiles[i];
+  if (!m || !m.url) return;
+  if (m.type === 'foto') { openMediaLightbox(m.url); return; }
+  openMediaSpeler(m.url, 'video', m.name || '', '');
 }
 
 function removeMedia(i) {
@@ -1296,72 +1308,49 @@ function removeMedia(i) {
 }
 
 
-function detectPlatform(url) {
-  if (url.includes('youtube') || url.includes('youtu.be')) return 'YouTube';
-  if (url.includes('instagram')) return 'Instagram';
-  if (url.includes('soundcloud')) return 'SoundCloud';
-  if (url.includes('tiktok')) return 'TikTok';
-  if (url.includes('spotify')) return 'Spotify';
-  return 'Link';
-}
-
-// TT-184 (03-09-2026, Ronald): links op het profiel tonen als beeldtegel,
-// zelfde formaat als een foto — net als YouTube's eigen videominiaturen.
-// Een YouTube-thumbnail is zonder API-sleutel te bouwen: elke YouTube-URL
-// bevat een video-ID, en img.youtube.com/vi/<ID>/hqdefault.jpg bestaat
-// altijd voor een geldige video. Voor andere platforms (Instagram, TikTok,
-// Spotify, SoundCloud, overig) bestaat geen sleutelloze manier om zonder
-// een aparte netwerkaanvraag per link aan een thumbnail te komen — Ronalds
-// besluit (03-09-2026): die tonen een tegel op hetzelfde formaat, met alleen
-// de platformnaam, geen echte thumbnail. Bestaande huisstijlkleuren
-// hergebruikt (surface2/border), geen nieuwe merkkleuren per platform —
-// dat zou een eigen paragraaf in huisstijl-en-consistentie.md vergen die er
-// nu niet is.
-function extractYouTubeId(url) {
-  let u;
-  try { u = new URL(url); } catch (e) { return null; }
-  const host = u.hostname.replace(/^www\./, '');
-  if (host === 'youtu.be') {
-    return u.pathname.slice(1).split('/')[0] || null;
-  }
-  if (host === 'youtube.com' || host === 'm.youtube.com') {
-    if (u.pathname === '/watch') return u.searchParams.get('v');
-    const shorts = u.pathname.match(/^\/shorts\/([^/]+)/);
-    if (shorts) return shorts[1];
-    const embed = u.pathname.match(/^\/embed\/([^/]+)/);
-    if (embed) return embed[1];
-  }
-  return null;
-}
+// detectPlatform() en extractYouTubeId() stonden hier tot 13-09-2026. Ze
+// staan nu in utils.js (TT-263): drie bestanden gebruiken ze. Geen kopie
+// laten staan — zie werkwijze §2.10, dode code gaat meteen weg.
 
 function addLinkRow() {
-  state.mediaLinks.push({ url: '' });
+  state.mediaLinks.push({ url: '', inBanner: false });
   renderLinksList();
 }
 
 function renderLinksList() {
   const list = document.getElementById('linksList');
-  list.innerHTML = state.mediaLinks.map((l,i) => `
-    <div class="link-row">
-      <span class="link-type-badge">${escHtml(l.url ? detectPlatform(l.url) : 'Link')}</span>
-      <input type="url" value="${escHtml(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
-        oninput="updateLinkUrl(${i}, this)">
-      <button class="song-remove" onclick="removeLink(${i})">✕</button>
-    </div>
-  `).join('');
+  list.innerHTML = state.mediaLinks.map((l, i) => mediaLinkRijHTML(l, i, '')).join('');
+  mediaTitelsBijwerken(list);
+  bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
   updateOptionalStepHints();
 }
 
+// Tijdens het typen alleen de waarde bijhouden. De lijst wordt pas opnieuw
+// getekend als het veld verlaten wordt (onchange in mediaLinkRijHTML) —
+// hertekenen tijdens het typen haalt de aandacht uit het veld.
 function updateLinkUrl(i, el) {
   if (!state.mediaLinks[i]) return;
   state.mediaLinks[i].url = el.value;
-  const badge = el.previousElementSibling;
-  if (badge) badge.textContent = el.value ? detectPlatform(el.value) : 'Link';
   updateOptionalStepHints();
 }
 
+function toggleLinkBanner(i) {
+  const l = state.mediaLinks[i];
+  if (!l) return;
+  if (!l.url.trim()) { showToast('Vul eerst het adres van de link in.'); return; }
+  if (!bannerKeuzeMag(bannerAantal(state.mediaFiles, state.mediaLinks), !l.inBanner)) return;
+  l.inBanner = !l.inBanner;
+  renderLinksList();
+}
+
+function speelLink(i) {
+  const l = state.mediaLinks[i];
+  if (!l || !l.url.trim()) return;
+  openMediaSpeler(l.url, 'link', null, detectPlatform(l.url));
+}
+
 function removeLink(i) {
-  state.mediaLinks.splice(i,1);
+  state.mediaLinks.splice(i, 1);
   renderLinksList();
 }
 

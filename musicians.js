@@ -146,7 +146,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
             // dan klikbaar. TT-218 (06-09-2026), op verzoek van Ronald: die
             // grens losgelaten — een link opent nu onder alle omstandigheden,
             // ook uitgelogd.
-            return `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" style="${tileStyle}">${inner}</a>`;
+            // TT-263 (13-09-2026, Ronald): de link stuurde de bezoeker naar de
+            // browser en daarmee de app uit. Nu opent hij in het mediascherm;
+            // kan een platform daar niet spelen, dan biedt dat scherm zelf de
+            // knop naar het platform aan.
+            return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" style="${tileStyle}cursor:pointer;">${inner}</button>`;
           }).join('')}
         </div>
       </div>` : ''}`;
@@ -1317,7 +1321,7 @@ function mhRenderTip() {
 function mhFieldSnapshot() {
   return JSON.stringify({
     avatarUrl: mhAvatarUrl,
-    mediaFiles: mhMediaFiles.map(m => ({ url: m.url, type: m.type, uploading: m.uploading })),
+    mediaFiles: mhMediaFiles.map(m => ({ url: m.url, type: m.type, uploading: m.uploading, inBanner: !!m.inBanner })),
     mediaLinks: mhMediaLinks,
   });
 }
@@ -1327,7 +1331,7 @@ async function openJeMediahoek() {
   resetCancelButton('mhAvatarRemoveBtn');
   mhStartTipCycle();
   const { data, error } = await db.from('musicians')
-    .select('avatar_url, musician_media(media_type, url, platform)')
+    .select('avatar_url, musician_media(media_type, url, platform, in_banner)')
     .eq('id', myMusicianId).single();
   if (error) {
     showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
@@ -1336,8 +1340,9 @@ async function openJeMediahoek() {
   mhAvatarUrl = data.avatar_url || null;
   mhMediaFiles = (data.musician_media || [])
     .filter(x => x.media_type === 'foto' || x.media_type === 'video')
-    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false }));
-  mhMediaLinks = (data.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
+    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false, inBanner: !!x.in_banner }));
+  mhMediaLinks = (data.musician_media || []).filter(x => x.media_type === 'link')
+    .map(x => ({ url: x.url, inBanner: !!x.in_banner }));
 
   mhRenderAvatar();
   mhRenderMediaGrid();
@@ -1416,7 +1421,7 @@ function mhHandleFileSelect(files) {
 
     const blobUrl = URL.createObjectURL(file);
     const type = isVideo ? 'video' : 'foto';
-    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true };
+    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true, inBanner: false };
     mhMediaFiles.push(entry);
     mhRenderMediaGrid();
 
@@ -1437,16 +1442,25 @@ function mhHandleFileSelect(files) {
 
 function mhRenderMediaGrid() {
   const grid = document.getElementById('mhMediaGrid');
-  grid.innerHTML = mhMediaFiles.map((m, i) => `
-    <div class="media-thumb">
-      ${m.type === 'foto'
-        ? `<img src="${safeUrl(m.url)}" alt="${escHtml(m.name)}">`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Video</div>`
-      }
-      ${m.uploading ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);"><div style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;"></div></div>` : ''}
-      <div class="thumb-type">${escHtml(m.type)}</div>
-      <button class="thumb-remove" onclick="mhRemoveMedia(${i})" aria-label="Verwijderen">✕</button>
-    </div>`).join('');
+  grid.innerHTML = mhMediaFiles.map((m, i) => mediaTegelHTML(m, i, 'mh')).join('');
+  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
+}
+
+// TT-263: dezelfde keuze als in de wizard, met dezelfde grens over foto's,
+// video's en links samen.
+function mhToggleMediaBanner(i) {
+  const m = mhMediaFiles[i];
+  if (!m) return;
+  if (!bannerKeuzeMag(bannerAantal(mhMediaFiles, mhMediaLinks), !m.inBanner)) return;
+  m.inBanner = !m.inBanner;
+  mhRenderMediaGrid();
+}
+
+function mhSpeelMedia(i) {
+  const m = mhMediaFiles[i];
+  if (!m || !m.url) return;
+  if (m.type === 'foto') { openMediaLightbox(m.url); return; }
+  openMediaSpeler(m.url, 'video', m.name || '', '');
 }
 
 function mhRemoveMedia(i) {
@@ -1459,26 +1473,37 @@ function mhRemoveMedia(i) {
 }
 
 function mhAddLinkRow() {
-  mhMediaLinks.push({ url: '' });
+  mhMediaLinks.push({ url: '', inBanner: false });
   mhRenderLinksList();
 }
 
 function mhRenderLinksList() {
   const list = document.getElementById('mhLinksList');
-  list.innerHTML = mhMediaLinks.map((l, i) => `
-    <div class="link-row">
-      <span class="link-type-badge">${escHtml(l.url ? detectPlatform(l.url) : 'Link')}</span>
-      <input type="url" value="${escHtml(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
-        oninput="mhUpdateLinkUrl(${i}, this)">
-      <button class="song-remove" onclick="mhRemoveLink(${i})" aria-label="Verwijderen">✕</button>
-    </div>`).join('');
+  list.innerHTML = mhMediaLinks.map((l, i) => mediaLinkRijHTML(l, i, 'mh')).join('');
+  mediaTitelsBijwerken(list);
+  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
 }
 
+// Tijdens het typen alleen de waarde bijhouden; hertekenen gebeurt als het
+// veld verlaten wordt, anders springt de aandacht uit het veld.
 function mhUpdateLinkUrl(i, el) {
   if (!mhMediaLinks[i]) return;
   mhMediaLinks[i].url = el.value;
-  const badge = el.previousElementSibling;
-  if (badge) badge.textContent = el.value ? detectPlatform(el.value) : 'Link';
+}
+
+function mhToggleLinkBanner(i) {
+  const l = mhMediaLinks[i];
+  if (!l) return;
+  if (!l.url.trim()) { showToast('Vul eerst het adres van de link in.'); return; }
+  if (!bannerKeuzeMag(bannerAantal(mhMediaFiles, mhMediaLinks), !l.inBanner)) return;
+  l.inBanner = !l.inBanner;
+  mhRenderLinksList();
+}
+
+function mhSpeelLink(i) {
+  const l = mhMediaLinks[i];
+  if (!l || !l.url.trim()) return;
+  openMediaSpeler(l.url, 'link', null, detectPlatform(l.url));
 }
 
 function mhRemoveLink(i) {
@@ -1501,7 +1526,7 @@ async function saveJeMediahoek() {
 
   const linkMedia = mhMediaLinks
     .filter(l => l.url.trim())
-    .map(l => ({ musician_id: myMusicianId, media_type: 'link', url: l.url, platform: detectPlatform(l.url) }));
+    .map(l => ({ musician_id: myMusicianId, media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
   if (linkMedia.length) {
     const { error: lErr } = await db.from('musician_media').insert(linkMedia);
     if (lErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(lErr)); return; }
@@ -1509,7 +1534,7 @@ async function saveJeMediahoek() {
 
   const fileMedia = mhMediaFiles
     .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
-    .map(m => ({ musician_id: myMusicianId, media_type: m.type, url: m.url }));
+    .map(m => ({ musician_id: myMusicianId, media_type: m.type, url: m.url, in_banner: !!m.inBanner }));
   if (fileMedia.length) {
     const { error: fErr } = await db.from('musician_media').insert(fileMedia);
     if (fErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(fErr)); return; }

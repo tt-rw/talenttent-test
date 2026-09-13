@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260912c">
+<link rel="stylesheet" href="styles.css?v=20260913a">
 </head>
 <body>
 
@@ -520,6 +520,11 @@
       <button class="media-tab" onclick="switchMediaTab('links', this)">Links</button>
     </div>
 
+    <!-- TT-263 (13-09-2026): de keuze voor de bannerbalk op het profiel. De
+         grens geldt over foto's, video's en links samen, dus staat de teller
+         buiten de twee tabbladen en niet erin. -->
+    <p class="banner-teller" id="wizardBannerTeller"></p>
+
     <!-- Upload pane -->
     <div class="media-pane active" id="pane-upload">
       <div class="drop-zone" id="dropZone"
@@ -834,6 +839,8 @@
       <button type="button" class="media-tab active" onclick="switchMhMediaTab('upload', this)">Upload</button>
       <button type="button" class="media-tab" onclick="switchMhMediaTab('links', this)">Links</button>
     </div>
+
+    <p class="banner-teller" id="mhBannerTeller"></p>
 
     <div class="media-pane active" id="mhPaneUpload">
       <div class="drop-zone" id="mhDropZone"
@@ -1793,6 +1800,22 @@
   </div>
 </div>
 
+<!-- TT-263 (13-09-2026, Ronald): "kunnen video's binnen de app worden
+     geopend? in een eigen scherm." Eén scherm voor een eigen video en voor
+     een link. Het kader wordt pas bij het openen gebouwd (utils.js,
+     openMediaSpeler) — vóór die tik staat er niets van een ander bedrijf in
+     de pagina, en YouTube gaat via de cookieloze variant. -->
+<div class="modal-overlay" id="mediaSpelerModal" onclick="if(event.target===this)closeMediaSpeler()">
+  <div class="modal-box media-speler-box">
+    <div class="media-speler-kop">
+      <span class="media-speler-titel" id="mediaSpelerTitel"></span>
+      <button class="media-speler-sluit" onclick="closeMediaSpeler()" aria-label="Sluiten">✕</button>
+    </div>
+    <div class="media-speler-beeld" id="mediaSpelerBeeld"></div>
+    <div class="media-speler-voet" id="mediaSpelerVoet"></div>
+  </div>
+</div>
+
 <!-- Generieke bevestigingsmodal (bijv. profiel verwijderen) -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box modal-box-sm">
@@ -2125,12 +2148,12 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260911d"></script>
-<script src="utils.js?v=20260912a"></script>
+<script src="utils.js?v=20260913a"></script>
 <script src="auth.js?v=20260912a"></script>
 <script src="postcode.js?v=20260910a"></script>
-<script src="wizard.js?v=20260912a"></script>
+<script src="wizard.js?v=20260913a"></script>
 <script src="search.js?v=20260912a"></script>
-<script src="musicians.js?v=20260912a"></script>
+<script src="musicians.js?v=20260913a"></script>
 <script src="bands.js?v=20260910a"></script>
 <script src="messages.js?v=20260911a"></script>
 <script src="modals-shared.js?v=20260910a"></script>
