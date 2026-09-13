@@ -870,6 +870,46 @@ def blok_browser():
               speler["uitleg"] and speler["geenFrame"], "")
         check("met één knop naar het platform", "Instagram" in speler["knop"], speler["knop"])
         check("een eigen video speelt in hetzelfde scherm", speler["eigenVideo"], "")
+
+        # TT-264 (13-09-2026, Ronald): de terugknop liet het geluid doorspelen.
+        controle = page.evaluate("""async () => {
+          const uit = {};
+          const modal = document.getElementById('mediaSpelerModal');
+          const beeld = document.getElementById('mediaSpelerBeeld');
+          // 1. terugknop van de browser
+          openMediaSpeler('https://youtu.be/tAGnKpE4Nxk', 'link', 'Test', 'YouTube');
+          await new Promise(r => setTimeout(r, 50));
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'myprofile' } }));
+          await new Promise(r => setTimeout(r, 50));
+          uit.naTerug = !modal.classList.contains('visible');
+          uit.naTerugLeeg = beeld.innerHTML === '';
+          // 2. Escape
+          openMediaSpeler('https://youtu.be/tAGnKpE4Nxk', 'link', 'Test', 'YouTube');
+          await new Promise(r => setTimeout(r, 50));
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          await new Promise(r => setTimeout(r, 50));
+          uit.naEscape = !modal.classList.contains('visible') && beeld.innerHTML === '';
+          // 3. wissel van view
+          openMediaSpeler('https://x/clip.mp4', 'video', 'clip', '');
+          await new Promise(r => setTimeout(r, 50));
+          showView('search');
+          await new Promise(r => setTimeout(r, 50));
+          uit.naViewWissel = !modal.classList.contains('visible') && beeld.innerHTML === '';
+          // 4. een modal zonder data-close gedraagt zich als voorheen
+          const bevestig = document.getElementById('confirmModal');
+          bevestig.classList.add('visible');
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'myprofile' } }));
+          await new Promise(r => setTimeout(r, 50));
+          uit.gewoneModal = !bevestig.classList.contains('visible');
+          return uit;
+        }""")
+        check("de terugknop sluit het mediascherm",
+              controle["naTerug"], "scherm bleef open")
+        check("en stopt beeld en geluid", controle["naTerugLeeg"], "beeldvlak niet leeggemaakt")
+        check("Escape doet hetzelfde", controle["naEscape"], "")
+        check("een wissel van view laat geen video achter", controle["naViewWissel"], "")
+        check("een modal zonder eigen sluitfunctie gedraagt zich als voorheen",
+              controle["gewoneModal"], "")
         check("geen paginafouten in blok 13", not page_errors, "; ".join(page_errors)[:200])
 
         page.evaluate("window.TT_STUB.reset()")
