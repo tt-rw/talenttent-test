@@ -25,6 +25,18 @@ drie nu "Alle" — zelfde patroon als Status, dat al "Alle bands" toont.
 **Geverifieerd:** code gelezen en aangepast, testset ongewijzigd op 402 van
 402 (geen test controleerde de oude tekst).
 
+**Andere schermen nagelopen op dezelfde fout, op verzoek van Ronald.**
+Doorzocht: alle dertien JS-bestanden en `index.html` op elk voorkomen van
+"Geen". Gevonden: `leeftijdBereikTekst()` en `niveauBereikTekst()` (de lange
+terugleesregel onder het wiel) zeiden al "Alle leeftijden" / "Alle niveaus" —
+de inconsistentie zat dus alleen tussen de korte en de lange vorm van
+dezelfde stand, niet in een derde scherm. Eén ander scherm gebruikt "Geen"
+wél terecht: de digestfrequentie in Instellingen (`Dagelijks / Wekelijks /
+Geen`, `setDigestFrequency`) — dat is een echte keuze ("geen e-mail"), geen
+lege-filterstand, en blijft ongewijzigd. Drie codecommentaren die nog "Geen"
+noemden zijn tegelijk rechtgezet (`utils.js`, `search.js`) zodat ze weer
+kloppen met de code.
+
 **TT-309, opgelost.** `onAuthStateChange()` in `core.js` had geen tak voor
 `USER_UPDATED` — alleen `SIGNED_IN`, `SIGNED_OUT`, `PASSWORD_RECOVERY`. Bij een
 e-mailwijziging met bevestigingsmail verandert het adres pas ná de klik op de
