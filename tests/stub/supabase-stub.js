@@ -65,7 +65,9 @@
       // TT-295 (26-09-2026): de bewaarde zoekopdracht, één rij per muzikant.
       musician_saved_search: [],
       // TT-435: gesprekken die een muzikant bij zichzelf verwijderde.
-      gesprek_verborgen: []
+      gesprek_verborgen: [],
+      // TT-451: berichten van Talent Tent, één rij per digestrun per muzikant.
+      talent_tent_berichten: []
     },
     rpcResults: {
       tt_search_musicians: [], tt_search_musicians_anon: [],
@@ -320,6 +322,8 @@
         },
         signUp(creds) {
           TT_STUB.calls.push({ kind: 'auth', name: 'signUp', email: creds && creds.email });
+          // TT-445: instelbaar, zoals authError bij inloggen (bestaand e-mailadres).
+          if (TT_STUB.signUpError) return Promise.resolve({ data: { session: null, user: null }, error: clone(TT_STUB.signUpError) });
           TT_STUB.session = { user: { id: 'u9', email: (creds && creds.email) || 'nieuw@talenttent.org' } };
           return Promise.resolve({ data: { session: clone(TT_STUB.session), user: clone(TT_STUB.session.user) }, error: null });
         },
